@@ -1,6 +1,11 @@
 import type { ProcessedLocation, ProcessingStats } from '../utils/timelineProcessor'
+import { getCountryFromCoordinates, type CountryInfo } from '../utils/countryLookup'
 
-interface TopLocation extends ProcessedLocation {
+interface TopCountry {
+  country: CountryInfo
+  visitCount: number
+  locationCount: number
+  totalDuration: number
   rank: number
 }
 
@@ -51,12 +56,35 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c
 }
 
-function getTopLocations(locations: ProcessedLocation[], limit: number = 10): TopLocation[] {
-  return locations
-    .sort((a, b) => b.count - a.count)
+function getTopCountries(locations: ProcessedLocation[], limit: number = 10): TopCountry[] {
+  const countryMap = new Map<string, TopCountry>()
+  
+  locations.forEach(location => {
+    const country = getCountryFromCoordinates(location.latitude, location.longitude)
+    if (!country) return
+    
+    const key = country.code
+    if (countryMap.has(key)) {
+      const existing = countryMap.get(key)!
+      existing.visitCount += location.count
+      existing.locationCount += 1
+      existing.totalDuration += location.totalDuration
+    } else {
+      countryMap.set(key, {
+        country,
+        visitCount: location.count,
+        locationCount: 1,
+        totalDuration: location.totalDuration,
+        rank: 0
+      })
+    }
+  })
+  
+  return Array.from(countryMap.values())
+    .sort((a, b) => b.visitCount - a.visitCount)
     .slice(0, limit)
-    .map((location, index) => ({
-      ...location,
+    .map((country, index) => ({
+      ...country,
       rank: index + 1
     }))
 }
@@ -78,7 +106,7 @@ function calculateTotalDistance(locations: ProcessedLocation[]): number {
 }
 
 export function StatsDashboard({ locations, stats, isVisible, onToggle }: StatsDashboardProps) {
-  const topLocations = getTopLocations(locations, 5)
+  const topCountries = getTopCountries(locations, 5)
   const totalDuration = locations.reduce((sum, loc) => sum + loc.totalDuration, 0)
   const totalDistance = calculateTotalDistance(locations)
   const averageVisitDuration = locations.length > 0 ? totalDuration / stats.validLocations : 0
@@ -158,32 +186,32 @@ export function StatsDashboard({ locations, stats, isVisible, onToggle }: StatsD
               </div>
             )}
 
-            {/* Top Locations */}
+            {/* Top Countries */}
             <div>
               <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                Most Visited Places
+                Most Visited Countries
               </h4>
               <div className="space-y-2">
-                {topLocations.map((location) => (
-                  <div key={`${location.latitude}-${location.longitude}`} className="flex items-center justify-between py-1">
+                {topCountries.map((country) => (
+                  <div key={country.country.code} className="flex items-center justify-between py-1">
                     <div className="flex items-center space-x-2">
                       <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                         <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
-                          {location.rank}
+                          {country.rank}
                         </span>
                       </div>
                       <div className="min-w-0">
                         <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                          {location.semanticType || 'Unknown Location'}
+                          {country.country.name}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
+                          {country.locationCount} locations • {formatDuration(country.totalDuration)}
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {location.count}
+                        {country.visitCount}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">
                         visits
