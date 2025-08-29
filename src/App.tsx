@@ -93,10 +93,10 @@ function App() {
         </div>
       ) : (
         <div className="h-screen w-screen relative">
-          <HeatmapView locations={locations} />
+          <HeatmapView locations={locations} stats={stats!} />
           
           {/* Floating header overlay */}
-          <div className="absolute top-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 text-sm z-20 max-w-sm">
+          <div className="absolute top-4 right-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 text-sm z-20 max-w-sm">
             <div className="flex items-center justify-between mb-2">
               <h1 className="text-lg font-bold text-gray-900 dark:text-white">
                 Timeline Heatmap
