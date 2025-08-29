@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { FileUpload } from './components/FileUpload'
 import { HeatmapView } from './components/HeatmapView'
-import { processTimelineData, type ProcessedLocation, type ProcessingStats } from './utils/timelineProcessor'
+import { processTimelineData, type ProcessedLocation, type ProcessingStats, type TimelineEntry } from './utils/timelineProcessor'
 
 function App() {
   const [locations, setLocations] = useState<ProcessedLocation[]>([])
@@ -9,7 +9,7 @@ function App() {
   const [error, setError] = useState<string>('')
   const [isProcessing, setIsProcessing] = useState(false)
 
-  const handleFileSelect = async (data: any[]) => {
+  const handleFileSelect = async (data: TimelineEntry[]) => {
     setIsProcessing(true)
     setError('')
     

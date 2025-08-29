@@ -1,7 +1,8 @@
 import { useCallback, useState, useRef } from 'react'
+import type { TimelineEntry } from '../utils/timelineProcessor'
 
 interface FileUploadProps {
-  onFileSelect: (data: any[]) => void
+  onFileSelect: (data: TimelineEntry[]) => void
   onError: (error: string) => void
 }
 

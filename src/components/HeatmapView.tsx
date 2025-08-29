@@ -44,8 +44,7 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
           ]
         },
         center: [-98.5, 39.8],
-        zoom: 4,
-        attributionControl: true
+        zoom: 4
       })
 
       map.current.on('load', () => {

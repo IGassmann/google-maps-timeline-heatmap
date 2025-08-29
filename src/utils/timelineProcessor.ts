@@ -36,13 +36,13 @@ export interface ProcessingStats {
 export function parseGeoLocation(geoString: string): { lat: number; lng: number } | null {
   const match = geoString.match(/geo:(-?\d+\.?\d*),(-?\d+\.?\d*)/)
   if (!match) return null
-  
+
   const lat = parseFloat(match[1])
   const lng = parseFloat(match[2])
-  
+
   if (isNaN(lat) || isNaN(lng)) return null
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null
-  
+
   return { lat, lng }
 }
 
@@ -61,7 +61,7 @@ export function processTimelineData(entries: TimelineEntry[]): {
   stats: ProcessingStats
 } {
   console.log(`Processing ${entries.length} timeline entries...`)
-  
+
   const locationMap = new Map<string, ProcessedLocation>()
   const stats: ProcessingStats = {
     totalEntries: entries.length,
@@ -91,7 +91,7 @@ export function processTimelineData(entries: TimelineEntry[]): {
       const placeId = entry.visit.topCandidate.placeID
 
       const key = `${coords.lat.toFixed(6)},${coords.lng.toFixed(6)}`
-      
+
       if (locationMap.has(key)) {
         const existing = locationMap.get(key)!
         existing.count++
@@ -111,7 +111,7 @@ export function processTimelineData(entries: TimelineEntry[]): {
 
       const entryStart = new Date(entry.startTime)
       const entryEnd = new Date(entry.endTime)
-      
+
       if (!stats.dateRange.start || entryStart < stats.dateRange.start) {
         stats.dateRange.start = entryStart
       }
@@ -120,14 +120,14 @@ export function processTimelineData(entries: TimelineEntry[]): {
       }
 
       stats.validLocations++
-    } catch (error) {
+    } catch {
       stats.invalidEntries++
     }
   }
 
   const locations = Array.from(locationMap.values())
   console.log(`Processed data: ${locations.length} unique locations, ${stats.validLocations} valid entries, ${stats.invalidEntries} invalid entries`)
-  
+
   if (locations.length > 0) {
     const sampleLocation = locations[0]
     console.log('Sample processed location:', sampleLocation)
@@ -137,16 +137,4 @@ export function processTimelineData(entries: TimelineEntry[]): {
     locations,
     stats
   }
-}
-
-export function createHeatmapData(locations: ProcessedLocation[]): Array<[number, number, number]> {
-  if (locations.length === 0) return []
-
-  const maxCount = Math.max(...locations.map(l => l.count))
-  
-  return locations.map(location => [
-    location.latitude,
-    location.longitude,
-    location.count / maxCount
-  ])
 }
