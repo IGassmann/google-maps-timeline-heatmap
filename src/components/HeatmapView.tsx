@@ -17,7 +17,7 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
     if (!mapContainer.current || map.current) return
 
     console.log('Initializing MapLibre GL map...')
-    
+
     try {
       map.current = new maplibregl.Map({
         container: mapContainer.current,
@@ -116,40 +116,47 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
             'interpolate',
             ['linear'],
             ['get', 'count'],
-            0, 0,
-            10, 1
+            1, 0.1,
+            5, 0.5,
+            20, 1,
+            100, 2
           ],
           'heatmap-intensity': [
             'interpolate',
             ['linear'],
             ['zoom'],
-            0, 1,
-            15, 3
+            0, 0.8,
+            9, 1.2,
+            15, 2
           ],
           'heatmap-color': [
             'interpolate',
             ['linear'],
             ['heatmap-density'],
-            0, 'rgba(33,102,172,0)',
-            0.2, 'rgb(103,169,207)',
-            0.4, 'rgb(209,229,240)',
-            0.6, 'rgb(253,219,199)',
-            0.8, 'rgb(239,138,98)',
-            1, 'rgb(178,24,43)'
+            0, 'rgba(0,0,0,0)',
+            0.1, 'rgba(0,100,255,0.4)',
+            0.3, 'rgba(0,200,255,0.6)',
+            0.5, 'rgba(255,255,0,0.8)',
+            0.7, 'rgba(255,150,0,0.9)',
+            0.9, 'rgba(255,50,0,0.95)',
+            1, 'rgba(200,0,0,1)'
           ],
           'heatmap-radius': [
             'interpolate',
             ['linear'],
             ['zoom'],
-            0, 2,
-            15, 20
+            0, 8,
+            5, 15,
+            10, 25,
+            15, 40
           ],
           'heatmap-opacity': [
             'interpolate',
             ['linear'],
             ['zoom'],
-            7, 1,
-            15, 0
+            5, 0.9,
+            14, 0.6,
+            16, 0
           ]
         }
       })
@@ -188,8 +195,8 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
       locations.forEach(location => {
         bounds.extend([location.longitude, location.latitude])
       })
-      
-      map.current.fitBounds(bounds, { 
+
+      map.current.fitBounds(bounds, {
         padding: 50,
         maxZoom: 12
       })
@@ -199,8 +206,8 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
 
   return (
     <div className="w-full h-full relative">
-      <div 
-        ref={mapContainer} 
+      <div
+        ref={mapContainer}
         className="w-full h-full min-h-[500px]"
         style={{ minHeight: '500px' }}
       />
@@ -209,16 +216,6 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
             <p className="text-gray-600 dark:text-gray-400">Loading map...</p>
-          </div>
-        </div>
-      )}
-      {locations.length > 0 && isMapLoaded && (
-        <div className="absolute top-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 text-sm z-10">
-          <div className="font-medium text-gray-900 dark:text-white">
-            {locations.length.toLocaleString()} unique locations
-          </div>
-          <div className="text-gray-600 dark:text-gray-400">
-            {locations.reduce((sum, loc) => sum + loc.count, 0).toLocaleString()} total visits
           </div>
         </div>
       )}

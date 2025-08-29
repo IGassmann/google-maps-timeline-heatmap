@@ -92,43 +92,38 @@ function App() {
           </main>
         </div>
       ) : (
-        <div className="h-full flex flex-col">
-          <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 z-10">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                    Timeline Heatmap
-                  </h1>
-                  {stats && (
-                    <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      <span>{locations.length} locations</span>
-                      <span>•</span>
-                      <span>{stats.validLocations} visits</span>
-                      {stats.dateRange.start && stats.dateRange.end && (
-                        <>
-                          <span>•</span>
-                          <span>
-                            {stats.dateRange.start.getFullYear()} - {stats.dateRange.end.getFullYear()}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={handleReset}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  Upload New File
-                </button>
-              </div>
+        <div className="h-screen w-screen relative">
+          <HeatmapView locations={locations} />
+          
+          {/* Floating header overlay */}
+          <div className="absolute top-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 text-sm z-20 max-w-sm">
+            <div className="flex items-center justify-between mb-2">
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white">
+                Timeline Heatmap
+              </h1>
+              <button
+                onClick={handleReset}
+                className="ml-4 px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                New File
+              </button>
             </div>
-          </header>
-
-          <main className="flex-1">
-            <HeatmapView locations={locations} />
-          </main>
+            {stats && (
+              <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                <span>{locations.length.toLocaleString()} locations</span>
+                <span>•</span>
+                <span>{stats.validLocations.toLocaleString()} visits</span>
+                {stats.dateRange.start && stats.dateRange.end && (
+                  <>
+                    <span>•</span>
+                    <span>
+                      {stats.dateRange.start.getFullYear()} - {stats.dateRange.end.getFullYear()}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
