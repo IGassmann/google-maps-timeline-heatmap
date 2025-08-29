@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useState, useRef } from 'react'
 
 interface FileUploadProps {
   onFileSelect: (data: any[]) => void
@@ -8,6 +8,7 @@ interface FileUploadProps {
 export function FileUpload({ onFileSelect, onError }: FileUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const processFile = useCallback(async (file: File) => {
     if (!file.name.endsWith('.json')) {
@@ -66,7 +67,7 @@ export function FileUpload({ onFileSelect, onError }: FileUploadProps) {
           setIsDragOver(true)
         }}
         onDragLeave={() => setIsDragOver(false)}
-        onClick={() => !isLoading && document.querySelector<HTMLInputElement>('.file-input')?.click()}
+        onClick={() => !isLoading && fileInputRef.current?.click()}
       >
         {isLoading ? (
           <div className="flex flex-col items-center space-y-4">
@@ -86,10 +87,11 @@ export function FileUpload({ onFileSelect, onError }: FileUploadProps) {
               Your data stays private - all processing happens in your browser
             </p>
             <input
+              ref={fileInputRef}
               type="file"
               accept=".json"
               onChange={handleFileInput}
-              className="file-input absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              className="hidden"
             />
           </>
         )}
