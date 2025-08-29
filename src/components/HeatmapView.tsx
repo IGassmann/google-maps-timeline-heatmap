@@ -16,26 +16,47 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
   useEffect(() => {
     if (!mapContainer.current || map.current) return
 
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: 'https://demotiles.maplibre.org/style.json',
-      center: [-74.5, 40],
-      zoom: 9
-    })
+    console.log('Initializing MapLibre GL map...')
+    
+    try {
+      map.current = new maplibregl.Map({
+        container: mapContainer.current,
+        style: 'https://demotiles.maplibre.org/style.json',
+        center: [-74.5, 40],
+        zoom: 2,
+        attributionControl: false
+      })
 
-    map.current.on('load', () => {
-      setIsMapLoaded(true)
-      onMapLoad?.()
-    })
+      map.current.on('load', () => {
+        console.log('Map loaded successfully')
+        setIsMapLoaded(true)
+        onMapLoad?.()
+      })
 
-    return () => {
-      map.current?.remove()
-      map.current = null
+      map.current.on('error', (e) => {
+        console.error('Map error:', e)
+      })
+
+      return () => {
+        map.current?.remove()
+        map.current = null
+      }
+    } catch (error) {
+      console.error('Failed to initialize map:', error)
     }
   }, [onMapLoad])
 
   useEffect(() => {
-    if (!map.current || !isMapLoaded || locations.length === 0) return
+    if (!map.current || !isMapLoaded || locations.length === 0) {
+      console.log('Heatmap effect conditions not met:', {
+        hasMap: !!map.current,
+        isMapLoaded,
+        locationsCount: locations.length
+      })
+      return
+    }
+
+    console.log(`Processing ${locations.length} locations for heatmap...`)
 
     const geojsonData = {
       type: 'FeatureCollection' as const,
@@ -52,6 +73,8 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
         }
       }))
     }
+
+    console.log('GeoJSON sample:', geojsonData.features.slice(0, 3))
 
     if (map.current.getSource('timeline-data')) {
       const source = map.current.getSource('timeline-data') as maplibregl.GeoJSONSource
@@ -155,9 +178,21 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
 
   return (
     <div className="w-full h-full relative">
-      <div ref={mapContainer} className="w-full h-full" />
-      {locations.length > 0 && (
-        <div className="absolute top-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 text-sm">
+      <div 
+        ref={mapContainer} 
+        className="w-full h-full min-h-[500px]"
+        style={{ minHeight: '500px' }}
+      />
+      {!isMapLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+            <p className="text-gray-600 dark:text-gray-400">Loading map...</p>
+          </div>
+        </div>
+      )}
+      {locations.length > 0 && isMapLoaded && (
+        <div className="absolute top-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 text-sm z-10">
           <div className="font-medium text-gray-900 dark:text-white">
             {locations.length.toLocaleString()} unique locations
           </div>
