@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { ProcessedLocation } from '../utils/timelineProcessor'
-import { HeatmapControls, type HeatmapSettings } from './HeatmapControls'
 
 interface HeatmapViewProps {
   locations: ProcessedLocation[]
@@ -13,12 +12,6 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<maplibregl.Map | null>(null)
   const [isMapLoaded, setIsMapLoaded] = useState(false)
-  const [heatmapSettings, setHeatmapSettings] = useState<HeatmapSettings>({
-    intensity: 1.2,
-    radius: 25,
-    opacity: 0.8
-  })
-  const [controlsVisible, setControlsVisible] = useState(false)
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return
@@ -127,7 +120,14 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
             20, 1,
             100, 2
           ],
-          'heatmap-intensity': heatmapSettings.intensity,
+          'heatmap-intensity': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            0, 0.8,
+            9, 1.2,
+            15, 2
+          ],
           'heatmap-color': [
             'interpolate',
             ['linear'],
@@ -144,17 +144,17 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
             'interpolate',
             ['linear'],
             ['zoom'],
-            0, Math.max(5, heatmapSettings.radius * 0.3),
-            5, Math.max(10, heatmapSettings.radius * 0.6),
-            10, heatmapSettings.radius,
-            15, heatmapSettings.radius * 1.6
+            0, 8,
+            5, 15,
+            10, 25,
+            15, 40
           ],
           'heatmap-opacity': [
             'interpolate',
             ['linear'],
             ['zoom'],
-            5, heatmapSettings.opacity,
-            14, heatmapSettings.opacity * 0.7,
+            5, 0.9,
+            14, 0.6,
             16, 0
           ]
         }
@@ -201,33 +201,7 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
       })
     }
 
-  }, [locations, isMapLoaded, heatmapSettings])
-
-  // Update heatmap when settings change
-  useEffect(() => {
-    if (!map.current || !isMapLoaded || !map.current.getLayer('timeline-heatmap')) return
-
-    map.current.setPaintProperty('timeline-heatmap', 'heatmap-intensity', heatmapSettings.intensity)
-    
-    map.current.setPaintProperty('timeline-heatmap', 'heatmap-radius', [
-      'interpolate',
-      ['linear'],
-      ['zoom'],
-      0, Math.max(5, heatmapSettings.radius * 0.3),
-      5, Math.max(10, heatmapSettings.radius * 0.6),
-      10, heatmapSettings.radius,
-      15, heatmapSettings.radius * 1.6
-    ])
-    
-    map.current.setPaintProperty('timeline-heatmap', 'heatmap-opacity', [
-      'interpolate',
-      ['linear'],
-      ['zoom'],
-      5, heatmapSettings.opacity,
-      14, heatmapSettings.opacity * 0.7,
-      16, 0
-    ])
-  }, [heatmapSettings, isMapLoaded])
+  }, [locations, isMapLoaded])
 
   return (
     <div className="w-full h-full relative">
@@ -243,16 +217,6 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
             <p className="text-gray-600 dark:text-gray-400">Loading map...</p>
           </div>
         </div>
-      )}
-      
-      {/* Heatmap Controls */}
-      {isMapLoaded && locations.length > 0 && (
-        <HeatmapControls
-          settings={heatmapSettings}
-          onSettingsChange={setHeatmapSettings}
-          isVisible={controlsVisible}
-          onToggle={() => setControlsVisible(!controlsVisible)}
-        />
       )}
     </div>
   )
