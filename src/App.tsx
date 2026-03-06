@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { FileUpload } from './components/FileUpload'
-import { HeatmapView } from './components/HeatmapView'
 import { processTimelineData, type ProcessedLocation, type TimelineEntry } from './utils/timelineProcessor'
+
+const HeatmapView = lazy(() => import('./components/HeatmapView').then(m => ({ default: m.HeatmapView })))
 
 function App() {
   const [locations, setLocations] = useState<ProcessedLocation[]>([])
@@ -34,7 +35,16 @@ function App() {
   if (locations.length > 0) {
     return (
       <div className="h-screen w-screen relative">
-        <HeatmapView locations={locations} />
+        <Suspense fallback={
+          <div className="flex h-full w-full items-center justify-center bg-white dark:bg-zinc-950">
+            <div className="text-center">
+              <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600"></div>
+              <p className="text-sm text-gray-500 dark:text-zinc-400">Loading map...</p>
+            </div>
+          </div>
+        }>
+          <HeatmapView locations={locations} />
+        </Suspense>
 
         <div className="absolute top-4 right-4 z-20 flex items-center gap-3 rounded-full bg-white/90 py-2 pl-4 pr-2 shadow-lg ring-1 ring-black/5 backdrop-blur-sm dark:bg-zinc-900/90 dark:ring-white/10">
           <span className="text-sm font-medium text-gray-900 dark:text-white">Timeline Heatmap</span>
