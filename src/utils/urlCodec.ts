@@ -70,12 +70,12 @@ function unpackLocations(data: Uint8Array): ProcessedLocation[] {
   return locations
 }
 
-// Round coordinates to a ~55 km grid without merging.
+// Round coordinates to a ~22 km grid without merging.
 // Overlapping points at the same position preserve spatial density
 // for the heatmap while preventing shared URLs from revealing
 // precise locations.
 function reduceResolution(locations: ProcessedLocation[]): ProcessedLocation[] {
-  const factor = 2 // rounds to nearest 0.5 degree
+  const factor = 5 // rounds to nearest 0.2 degree
   return locations.map((loc) => ({
     latitude: Math.round(loc.latitude * factor) / factor,
     longitude: Math.round(loc.longitude * factor) / factor,
