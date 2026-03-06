@@ -1,4 +1,10 @@
 import type { ProcessedLocation, ProcessingStats } from '../utils/timelineProcessor'
+import { Button } from './ui/button'
+import { Heading, Subheading } from './ui/heading'
+import { Text, Strong } from './ui/text'
+import { Badge } from './ui/badge'
+import { Divider } from './ui/divider'
+import { DescriptionList, DescriptionTerm, DescriptionDetails } from './ui/description-list'
 
 interface StatsDashboardProps {
   locations: ProcessedLocation[]
@@ -33,80 +39,89 @@ export function StatsDashboard({ locations, stats, isVisible, onToggle }: StatsD
 
   return (
     <div className="absolute top-4 left-4 z-20">
-      <button
+      <Button
+        plain
         onClick={onToggle}
-        className="mb-2 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:shadow-xl transition-shadow border border-gray-200 dark:border-gray-600"
-        title="Toggle Statistics Dashboard"
+        className="mb-2 !p-2 rounded-lg shadow-lg ring-1 ring-zinc-950/10 dark:ring-white/10 bg-white dark:bg-zinc-900"
+        aria-label="Toggle Statistics Dashboard"
       >
-        <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5" data-slot="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
-      </button>
+      </Button>
 
       {isVisible && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 p-4 w-80 max-w-sm max-h-[80vh] overflow-y-auto">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <div className="rounded-xl bg-white p-4 shadow-lg ring-1 ring-zinc-950/10 w-80 max-w-sm max-h-[80vh] overflow-y-auto dark:bg-zinc-900 dark:ring-white/10">
+          <Heading level={3} className="mb-4">
             Timeline Statistics
-          </h3>
+          </Heading>
 
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              <div className="bg-blue-500/10 p-3 rounded-lg">
+                <div className="text-2xl font-bold text-blue-700 dark:text-blue-400">
                   {locations.length.toLocaleString()}
                 </div>
-                <div className="text-xs text-blue-600 dark:text-blue-400">Locations</div>
+                <Text className="!text-xs !text-blue-600 dark:!text-blue-400">Locations</Text>
               </div>
 
-              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+              <div className="bg-green-500/10 p-3 rounded-lg">
+                <div className="text-2xl font-bold text-green-700 dark:text-green-400">
                   {stats.validLocations.toLocaleString()}
                 </div>
-                <div className="text-xs text-green-600 dark:text-green-400">Total Visits</div>
+                <Text className="!text-xs !text-green-600 dark:!text-green-400">Total Visits</Text>
               </div>
 
-              <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+              <div className="bg-purple-500/10 p-3 rounded-lg col-span-2">
+                <div className="text-2xl font-bold text-purple-700 dark:text-purple-400">
                   {formatDuration(totalDuration)}
                 </div>
-                <div className="text-xs text-purple-600 dark:text-purple-400">Total Time</div>
+                <Text className="!text-xs !text-purple-600 dark:!text-purple-400">Total Time</Text>
               </div>
             </div>
 
             {stats.dateRange.start && stats.dateRange.end && (
-              <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+              <div className="bg-zinc-950/5 dark:bg-white/5 p-3 rounded-lg">
+                <Subheading level={4} className="mb-1">
                   Time Period
-                </h4>
-                <div className="text-sm text-gray-600 dark:text-gray-300">
+                </Subheading>
+                <Text className="!text-sm">
                   {stats.dateRange.start.toLocaleDateString()} - {stats.dateRange.end.toLocaleDateString()}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                </Text>
+                <Text className="!text-xs mt-1">
                   {Math.ceil((stats.dateRange.end.getTime() - stats.dateRange.start.getTime()) / (1000 * 60 * 60 * 24))} days
-                </div>
+                </Text>
               </div>
             )}
 
             <div>
-              <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+              <Subheading level={4} className="mb-2">
                 Location Types
-              </h4>
-              <div className="space-y-1">
+              </Subheading>
+              <div className="flex flex-wrap gap-1.5">
                 {Object.entries(locationTypes)
                   .sort(([,a], [,b]) => b - a)
                   .slice(0, 5)
                   .map(([type, count]) => (
-                    <div key={type} className="flex justify-between items-center py-1">
-                      <span className="text-sm text-gray-600 dark:text-gray-300 capitalize">
-                        {type.replace(/([A-Z])/g, ' $1').trim()}
-                      </span>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {count}
-                      </span>
-                    </div>
+                    <Badge key={type} color="zinc">
+                      {type.replace(/([A-Z])/g, ' $1').trim()}: {count}
+                    </Badge>
                   ))}
               </div>
             </div>
+
+            <Divider soft />
+
+            <DescriptionList>
+              <DescriptionTerm>Avg. visit duration</DescriptionTerm>
+              <DescriptionDetails>
+                <Strong>{formatDuration(locations.length > 0 ? totalDuration / stats.validLocations : 0)}</Strong>
+              </DescriptionDetails>
+              <DescriptionTerm>Invalid entries</DescriptionTerm>
+              <DescriptionDetails>
+                <Strong>{stats.invalidEntries.toLocaleString()}</Strong>
+              </DescriptionDetails>
+            </DescriptionList>
           </div>
         </div>
       )}

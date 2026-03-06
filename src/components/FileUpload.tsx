@@ -1,5 +1,7 @@
 import { useCallback, useState, useRef } from 'react'
 import type { TimelineEntry } from '../utils/timelineProcessor'
+import { Heading } from './ui/heading'
+import { Text, Strong } from './ui/text'
 
 interface FileUploadProps {
   onFileSelect: (data: TimelineEntry[]) => void
@@ -21,7 +23,7 @@ export function FileUpload({ onFileSelect, onError }: FileUploadProps) {
     try {
       const text = await file.text()
       const data = JSON.parse(text)
-      
+
       if (!Array.isArray(data)) {
         throw new Error('Invalid format: Expected an array of timeline entries')
       }
@@ -37,7 +39,7 @@ export function FileUpload({ onFileSelect, onError }: FileUploadProps) {
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDragOver(false)
-    
+
     const files = Array.from(e.dataTransfer.files)
     if (files.length > 0) {
       processFile(files[0])
@@ -56,9 +58,9 @@ export function FileUpload({ onFileSelect, onError }: FileUploadProps) {
       <div
         className={`
           relative border-2 border-dashed rounded-xl p-12 text-center transition-colors cursor-pointer
-          ${isDragOver 
-            ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20' 
-            : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+          ${isDragOver
+            ? 'border-blue-400 bg-blue-500/5'
+            : 'border-zinc-950/10 dark:border-white/15 hover:border-zinc-950/20 dark:hover:border-white/25'
           }
           ${isLoading ? 'opacity-75 pointer-events-none' : ''}
         `}
@@ -73,36 +75,36 @@ export function FileUpload({ onFileSelect, onError }: FileUploadProps) {
         {isLoading ? (
           <div className="flex flex-col items-center space-y-4">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            <p className="text-gray-600 dark:text-gray-400">Processing timeline data...</p>
+            <Text>Processing timeline data...</Text>
           </div>
         ) : (
           <>
             <div className="text-6xl mb-4">📁</div>
-            <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+            <Heading level={3} className="mb-2">
               Upload Google Maps Timeline
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            </Heading>
+            <Text className="mb-4">
               Drag and drop your timeline JSON file here, or click to browse
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-500">
+            </Text>
+            <Text className="!text-xs">
               Your data stays private - all processing happens in your browser
-            </p>
-            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 text-left text-sm text-gray-600 dark:text-gray-400">
-              <p className="font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            </Text>
+            <div className="mt-6 pt-6 border-t border-zinc-950/5 dark:border-white/5 text-left">
+              <Strong className="text-sm block mb-2">
                 How to get your Timeline data:
-              </p>
+              </Strong>
               <div className="space-y-3">
                 <div>
-                  <p className="font-medium text-gray-700 dark:text-gray-300">Android</p>
-                  <p>Settings → Location → Timeline → Export Timeline Data</p>
+                  <Strong className="text-sm">Android</Strong>
+                  <Text className="!text-sm">Settings → Location → Timeline → Export Timeline Data</Text>
                 </div>
                 <div>
-                  <p className="font-medium text-gray-700 dark:text-gray-300">iPhone</p>
-                  <p>Google Maps → Profile icon → Your Timeline → ⋯ → Location and privacy settings → Export Timeline data</p>
+                  <Strong className="text-sm">iPhone</Strong>
+                  <Text className="!text-sm">Google Maps → Profile icon → Your Timeline → ⋯ → Location and privacy settings → Export Timeline data</Text>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-500">
+                <Text className="!text-xs">
                   Transfer the exported JSON file to your computer via AirDrop, Google Drive, or USB.
-                </p>
+                </Text>
               </div>
             </div>
             <input

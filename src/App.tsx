@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { FileUpload } from './components/FileUpload'
 import { HeatmapView } from './components/HeatmapView'
+import { Heading } from './components/ui/heading'
+import { Text, Strong } from './components/ui/text'
+import { Button } from './components/ui/button'
+import { Badge } from './components/ui/badge'
 import { processTimelineData, type ProcessedLocation, type ProcessingStats, type TimelineEntry } from './utils/timelineProcessor'
 
 function App() {
@@ -12,12 +16,12 @@ function App() {
   const handleFileSelect = async (data: TimelineEntry[]) => {
     setIsProcessing(true)
     setError('')
-    
+
     try {
       const result = processTimelineData(data)
       setLocations(result.locations)
       setStats(result.stats)
-      
+
       if (result.locations.length === 0) {
         setError('No valid location data found in the timeline file')
       }
@@ -39,53 +43,52 @@ function App() {
   }
 
   return (
-    <div className="h-full bg-gray-50 dark:bg-gray-900">
+    <div className="h-full bg-white dark:bg-zinc-900">
       {locations.length === 0 ? (
         <div className="h-full flex flex-col">
-          <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+          <header className="border-b border-zinc-950/10 dark:border-white/10">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
               <div className="text-center">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  🗺️ Google Maps Timeline Heatmap
-                </h1>
-                <p className="mt-2 text-gray-600 dark:text-gray-400">
+                <Heading level={1} className="!text-3xl sm:!text-3xl">
+                  Google Maps Timeline Heatmap
+                </Heading>
+                <Text className="mt-2">
                   Visualize your location history with an interactive heatmap
-                </p>
+                </Text>
               </div>
             </div>
           </header>
 
           <main className="flex-1 flex items-center justify-center p-8">
             <div className="w-full max-w-4xl">
-              <FileUpload 
-                onFileSelect={handleFileSelect} 
+              <FileUpload
+                onFileSelect={handleFileSelect}
                 onError={handleError}
               />
-              
+
               {error && (
                 <div className="mt-6 max-w-2xl mx-auto">
-                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                  <div className="rounded-lg bg-red-500/10 p-4 ring-1 ring-red-600/20 dark:ring-red-500/30">
                     <div className="flex">
-                      <div className="text-red-400">⚠️</div>
                       <div className="ml-3">
-                        <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
+                        <Strong className="!text-red-700 dark:!text-red-400 text-sm">
                           Error
-                        </h3>
-                        <p className="mt-1 text-sm text-red-700 dark:text-red-300">
+                        </Strong>
+                        <Text className="mt-1 !text-red-600 dark:!text-red-300 !text-sm">
                           {error}
-                        </p>
+                        </Text>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
-              
+
               {isProcessing && (
                 <div className="mt-6 max-w-2xl mx-auto text-center">
-                  <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                  <Badge color="blue">
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 dark:border-blue-400"></div>
                     Processing timeline data...
-                  </div>
+                  </Badge>
                 </div>
               )}
             </div>
@@ -94,32 +97,25 @@ function App() {
       ) : (
         <div className="h-screen w-screen relative">
           <HeatmapView locations={locations} stats={stats!} />
-          
+
           {/* Floating header overlay */}
-          <div className="absolute top-4 right-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 text-sm z-20 max-w-sm">
+          <div className="absolute top-4 right-4 rounded-xl bg-white p-4 text-sm shadow-lg ring-1 ring-zinc-950/10 z-20 max-w-sm dark:bg-zinc-900 dark:ring-white/10">
             <div className="flex items-center justify-between mb-2">
-              <h1 className="text-lg font-bold text-gray-900 dark:text-white">
+              <Heading level={2} className="!text-lg sm:!text-lg">
                 Timeline Heatmap
-              </h1>
-              <button
-                onClick={handleReset}
-                className="ml-4 px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
+              </Heading>
+              <Button outline onClick={handleReset} className="ml-4 !text-xs !px-2 !py-1">
                 New File
-              </button>
+              </Button>
             </div>
             {stats && (
-              <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-                <span>{locations.length.toLocaleString()} locations</span>
-                <span>•</span>
-                <span>{stats.validLocations.toLocaleString()} visits</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge color="zinc">{locations.length.toLocaleString()} locations</Badge>
+                <Badge color="blue">{stats.validLocations.toLocaleString()} visits</Badge>
                 {stats.dateRange.start && stats.dateRange.end && (
-                  <>
-                    <span>•</span>
-                    <span>
-                      {stats.dateRange.start.getFullYear()} - {stats.dateRange.end.getFullYear()}
-                    </span>
-                  </>
+                  <Badge color="purple">
+                    {stats.dateRange.start.getFullYear()} - {stats.dateRange.end.getFullYear()}
+                  </Badge>
                 )}
               </div>
             )}
