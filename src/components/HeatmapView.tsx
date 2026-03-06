@@ -5,10 +5,9 @@ import type { ProcessedLocation } from '../utils/timelineProcessor'
 
 interface HeatmapViewProps {
   locations: ProcessedLocation[]
-  onMapLoad?: () => void
 }
 
-export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
+export function HeatmapView({ locations }: HeatmapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<maplibregl.Map | null>(null)
   const [isMapLoaded, setIsMapLoaded] = useState(false)
@@ -47,7 +46,6 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
 
       map.current.on('load', () => {
         setIsMapLoaded(true)
-        onMapLoad?.()
       })
 
       map.current.on('error', (e) => {
@@ -61,7 +59,7 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
     } catch (error) {
       console.error('Failed to initialize map:', error)
     }
-  }, [onMapLoad])
+  }, [])
 
   useEffect(() => {
     if (!map.current || !isMapLoaded || locations.length === 0) return
@@ -72,7 +70,6 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
         type: 'Feature' as const,
         properties: {
           count: location.count,
-          duration: location.totalDuration,
           semanticType: location.semanticType || 'Unknown'
         },
         geometry: {
@@ -186,17 +183,15 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
       })
     }
 
-    if (locations.length > 0) {
-      const bounds = new maplibregl.LngLatBounds()
-      locations.forEach(location => {
-        bounds.extend([location.longitude, location.latitude])
-      })
+    const bounds = new maplibregl.LngLatBounds()
+    locations.forEach(location => {
+      bounds.extend([location.longitude, location.latitude])
+    })
 
-      map.current.fitBounds(bounds, {
-        padding: 50,
-        maxZoom: 12
-      })
-    }
+    map.current.fitBounds(bounds, {
+      padding: 50,
+      maxZoom: 12
+    })
 
   }, [locations, isMapLoaded])
 
@@ -205,7 +200,6 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
       <div
         ref={mapContainer}
         className="w-full h-full min-h-[500px]"
-        style={{ minHeight: '500px' }}
       />
       {!isMapLoaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-zinc-950">

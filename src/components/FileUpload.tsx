@@ -12,7 +12,7 @@ export function FileUpload({ onFileSelect, onError }: FileUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const processFile = useCallback(async (file: File) => {
-    if (!file.name.endsWith('.json')) {
+    if (!file.name.toLowerCase().endsWith('.json')) {
       onError('Please select a JSON file')
       return
     }
