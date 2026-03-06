@@ -70,28 +70,17 @@ function unpackLocations(data: Uint8Array): ProcessedLocation[] {
   return locations
 }
 
-// Round coordinates to a ~11 km grid and merge colliding points.
-// This keeps the heatmap recognizable while preventing shared URLs
-// from revealing precise locations.
+// Round coordinates to a ~55 km grid without merging.
+// Overlapping points at the same position preserve spatial density
+// for the heatmap while preventing shared URLs from revealing
+// precise locations.
 function reduceResolution(locations: ProcessedLocation[]): ProcessedLocation[] {
-  const decimals = 1
-  const factor = 10 ** decimals
-  const map = new Map<string, ProcessedLocation>()
-
-  for (const loc of locations) {
-    const lat = Math.round(loc.latitude * factor) / factor
-    const lng = Math.round(loc.longitude * factor) / factor
-    const key = `${lat},${lng}`
-
-    const existing = map.get(key)
-    if (existing) {
-      existing.count += loc.count
-    } else {
-      map.set(key, { latitude: lat, longitude: lng, count: loc.count })
-    }
-  }
-
-  return Array.from(map.values())
+  const factor = 2 // rounds to nearest 0.5 degree
+  return locations.map((loc) => ({
+    latitude: Math.round(loc.latitude * factor) / factor,
+    longitude: Math.round(loc.longitude * factor) / factor,
+    count: loc.count,
+  }))
 }
 
 export async function encodeLocations(locations: ProcessedLocation[]): Promise<string> {
