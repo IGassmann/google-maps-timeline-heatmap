@@ -50,7 +50,7 @@ function App() {
   }
 
   return (
-    <div className="flex h-full flex-col items-center justify-center bg-white px-6 dark:bg-zinc-950">
+    <div className="flex min-h-full flex-col items-center justify-center bg-white px-6 py-12 dark:bg-zinc-950">
       <div className="w-full max-w-lg text-center">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
           Timeline Heatmap
