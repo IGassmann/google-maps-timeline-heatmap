@@ -1,8 +1,9 @@
 import type { ProcessedLocation } from './timelineProcessor'
 
-const FORMAT_VERSION = 0x01
-const BYTES_PER_POINT = 10
-const HASH_PREFIX = 'v1,'
+const FORMAT_VERSION = 0x03
+const BYTES_PER_POINT = 6 // int16 lat delta + int16 lng delta + uint16 count
+const GRID_FACTOR = 5 // rounds to nearest 0.2 degree (~22 km)
+const HASH_PREFIX = 'v3,'
 
 function toBase64Url(bytes: Uint8Array): string {
   const binString = Array.from(bytes, (byte) => String.fromCodePoint(byte)).join('')
@@ -28,17 +29,31 @@ async function decompress(data: Uint8Array): Promise<Uint8Array> {
 }
 
 function packLocations(locations: ProcessedLocation[]): Uint8Array {
-  const buffer = new ArrayBuffer(1 + locations.length * BYTES_PER_POINT)
+  // Sort by lat then lng for optimal delta encoding
+  const sorted = [...locations].sort((a, b) => {
+    const latA = Math.round(a.latitude * GRID_FACTOR)
+    const latB = Math.round(b.latitude * GRID_FACTOR)
+    if (latA !== latB) return latA - latB
+    return Math.round(a.longitude * GRID_FACTOR) - Math.round(b.longitude * GRID_FACTOR)
+  })
+
+  const buffer = new ArrayBuffer(1 + sorted.length * BYTES_PER_POINT)
   const view = new DataView(buffer)
 
   view.setUint8(0, FORMAT_VERSION)
 
-  for (let i = 0; i < locations.length; i++) {
+  let prevLat = 0
+  let prevLng = 0
+
+  for (let i = 0; i < sorted.length; i++) {
     const offset = 1 + i * BYTES_PER_POINT
-    const loc = locations[i]
-    view.setInt32(offset, Math.round(loc.latitude * 1e5), true)
-    view.setInt32(offset + 4, Math.round(loc.longitude * 1e5), true)
-    view.setUint16(offset + 8, Math.min(loc.count, 65535), true)
+    const lat = Math.round(sorted[i].latitude * GRID_FACTOR)
+    const lng = Math.round(sorted[i].longitude * GRID_FACTOR)
+    view.setInt16(offset, lat - prevLat, true)
+    view.setInt16(offset + 2, lng - prevLng, true)
+    view.setUint16(offset + 4, Math.min(sorted[i].count, 65535), true)
+    prevLat = lat
+    prevLng = lng
   }
 
   return new Uint8Array(buffer)
@@ -58,12 +73,17 @@ function unpackLocations(data: Uint8Array): ProcessedLocation[] {
   const count = pointBytes / BYTES_PER_POINT
   const locations: ProcessedLocation[] = []
 
+  let prevLat = 0
+  let prevLng = 0
+
   for (let i = 0; i < count; i++) {
     const offset = 1 + i * BYTES_PER_POINT
+    prevLat += view.getInt16(offset, true)
+    prevLng += view.getInt16(offset + 2, true)
     locations.push({
-      latitude: view.getInt32(offset, true) / 1e5,
-      longitude: view.getInt32(offset + 4, true) / 1e5,
-      count: view.getUint16(offset + 8, true),
+      latitude: prevLat / GRID_FACTOR,
+      longitude: prevLng / GRID_FACTOR,
+      count: view.getUint16(offset + 4, true),
     })
   }
 
@@ -75,10 +95,9 @@ function unpackLocations(data: Uint8Array): ProcessedLocation[] {
 // for the heatmap while preventing shared URLs from revealing
 // precise locations.
 function reduceResolution(locations: ProcessedLocation[]): ProcessedLocation[] {
-  const factor = 5 // rounds to nearest 0.2 degree
   return locations.map((loc) => ({
-    latitude: Math.round(loc.latitude * factor) / factor,
-    longitude: Math.round(loc.longitude * factor) / factor,
+    latitude: Math.round(loc.latitude * GRID_FACTOR) / GRID_FACTOR,
+    longitude: Math.round(loc.longitude * GRID_FACTOR) / GRID_FACTOR,
     count: loc.count,
   }))
 }
