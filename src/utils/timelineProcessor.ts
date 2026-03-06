@@ -60,8 +60,6 @@ export function processTimelineData(entries: TimelineEntry[]): {
   locations: ProcessedLocation[]
   stats: ProcessingStats
 } {
-  console.log(`Processing ${entries.length} timeline entries...`)
-
   const locationMap = new Map<string, ProcessedLocation>()
   const stats: ProcessingStats = {
     totalEntries: entries.length,
@@ -126,12 +124,6 @@ export function processTimelineData(entries: TimelineEntry[]): {
   }
 
   const locations = Array.from(locationMap.values())
-  console.log(`Processed data: ${locations.length} unique locations, ${stats.validLocations} valid entries, ${stats.invalidEntries} invalid entries`)
-
-  if (locations.length > 0) {
-    const sampleLocation = locations[0]
-    console.log('Sample processed location:', sampleLocation)
-  }
 
   return {
     locations,

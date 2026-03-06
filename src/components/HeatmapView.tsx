@@ -19,8 +19,6 @@ export function HeatmapView({ locations, stats, onMapLoad }: HeatmapViewProps) {
   useEffect(() => {
     if (!mapContainer.current || map.current) return
 
-    console.log('Initializing MapLibre GL map...')
-
     try {
       map.current = new maplibregl.Map({
         container: mapContainer.current,
@@ -51,7 +49,6 @@ export function HeatmapView({ locations, stats, onMapLoad }: HeatmapViewProps) {
       })
 
       map.current.on('load', () => {
-        console.log('Map loaded successfully')
         setIsMapLoaded(true)
         onMapLoad?.()
       })
@@ -70,16 +67,7 @@ export function HeatmapView({ locations, stats, onMapLoad }: HeatmapViewProps) {
   }, [onMapLoad])
 
   useEffect(() => {
-    if (!map.current || !isMapLoaded || locations.length === 0) {
-      console.log('Heatmap effect conditions not met:', {
-        hasMap: !!map.current,
-        isMapLoaded,
-        locationsCount: locations.length
-      })
-      return
-    }
-
-    console.log(`Processing ${locations.length} locations for heatmap...`)
+    if (!map.current || !isMapLoaded || locations.length === 0) return
 
     const geojsonData = {
       type: 'FeatureCollection' as const,
@@ -96,8 +84,6 @@ export function HeatmapView({ locations, stats, onMapLoad }: HeatmapViewProps) {
         }
       }))
     }
-
-    console.log('GeoJSON sample:', geojsonData.features.slice(0, 3))
 
     if (map.current.getSource('timeline-data')) {
       const source = map.current.getSource('timeline-data') as maplibregl.GeoJSONSource
