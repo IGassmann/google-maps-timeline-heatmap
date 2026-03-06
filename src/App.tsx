@@ -14,6 +14,7 @@ function App() {
     () => window.location.hash.startsWith('#v1,')
   )
 
+  // Decode hash on initial load (for shared URLs)
   useEffect(() => {
     if (!window.location.hash.startsWith('#v1,')) return
 
@@ -25,6 +26,8 @@ function App() {
         setLocations(decoded)
       }
       setIsLoadingHash(false)
+      // Clear hash so the user doesn't accidentally re-share the URL
+      history.replaceState(null, '', window.location.pathname)
     })
 
     return () => {
@@ -41,10 +44,6 @@ function App() {
 
       if (result.length === 0) {
         setError('No valid location data found in the timeline file')
-      } else {
-        encodeLocations(result).then((hash) => {
-          history.replaceState(null, '', '#' + hash)
-        })
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process timeline data')
@@ -55,10 +54,19 @@ function App() {
     setError(errorMessage)
   }
 
+  const handleShare = async () => {
+    const hash = await encodeLocations(locations)
+    const shareUrl = window.location.origin + window.location.pathname + '#' + hash
+    const decoded = await decodeLocationsFromHash(hash)
+    if (decoded && decoded.length > 0) {
+      setLocations(decoded)
+    }
+    return shareUrl
+  }
+
   const handleReset = () => {
     setLocations([])
     setError('')
-    history.replaceState(null, '', window.location.pathname)
   }
 
   if (isLoadingHash) {
@@ -82,7 +90,7 @@ function App() {
 
         <div className="absolute top-4 right-4 z-20 flex items-center gap-3 rounded-full bg-white/90 py-2 pl-4 pr-2 shadow-lg ring-1 ring-black/5 backdrop-blur-sm dark:bg-zinc-900/90 dark:ring-white/10">
           <span className="text-sm font-medium text-gray-900 dark:text-white">Timeline Heatmap</span>
-          <ShareButton />
+          <ShareButton onShare={handleShare} />
           <button
             onClick={handleReset}
             className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"

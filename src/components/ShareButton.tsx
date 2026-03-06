@@ -1,17 +1,22 @@
 import { useCallback, useState } from 'react'
 
-export function ShareButton() {
+interface ShareButtonProps {
+  onShare: () => Promise<string>
+}
+
+export function ShareButton({ onShare }: ShareButtonProps) {
   const [copied, setCopied] = useState(false)
 
   const handleShare = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href)
+      const shareUrl = await onShare()
+      await navigator.clipboard.writeText(shareUrl)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
       // Clipboard API unavailable — no-op
     }
-  }, [])
+  }, [onShare])
 
   return (
     <button
