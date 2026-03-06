@@ -118,7 +118,7 @@ function App() {
         )}
 
         <p className="mt-10 text-xs text-gray-400 dark:text-zinc-600">
-          All processing happens locally in your browser. Your data never leaves your device.
+          All processing happens locally in your browser. Your data never leaves your device unless you choose to share it in a low-resolution format.
         </p>
       </div>
     </div>
