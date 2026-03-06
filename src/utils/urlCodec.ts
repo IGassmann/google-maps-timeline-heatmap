@@ -70,11 +70,11 @@ function unpackLocations(data: Uint8Array): ProcessedLocation[] {
   return locations
 }
 
-// Round coordinates to a ~1.1 km grid and merge colliding points.
+// Round coordinates to a ~11 km grid and merge colliding points.
 // This keeps the heatmap recognizable while preventing shared URLs
-// from revealing exact addresses.
+// from revealing precise locations.
 function reduceResolution(locations: ProcessedLocation[]): ProcessedLocation[] {
-  const decimals = 2
+  const decimals = 1
   const factor = 10 ** decimals
   const map = new Map<string, ProcessedLocation>()
 
