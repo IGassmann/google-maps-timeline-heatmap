@@ -92,7 +92,7 @@ function App() {
         </div>
       ) : (
         <div className="h-screen w-screen relative">
-          <HeatmapView locations={locations} stats={stats!} />
+          <HeatmapView locations={locations} />
 
           {/* Floating header overlay */}
           <div className="absolute top-4 right-4 rounded-xl bg-white p-4 text-sm shadow-lg ring-1 ring-zinc-950/10 z-20 max-w-sm dark:bg-zinc-900 dark:ring-white/10">

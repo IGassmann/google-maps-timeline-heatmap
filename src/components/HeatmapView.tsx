@@ -1,16 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import type { ProcessedLocation, ProcessingStats } from '../utils/timelineProcessor'
+import type { ProcessedLocation } from '../utils/timelineProcessor'
 import { StatsDashboard } from './StatsDashboard'
 
 interface HeatmapViewProps {
   locations: ProcessedLocation[]
-  stats: ProcessingStats
   onMapLoad?: () => void
 }
 
-export function HeatmapView({ locations, stats, onMapLoad }: HeatmapViewProps) {
+export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<maplibregl.Map | null>(null)
   const [isMapLoaded, setIsMapLoaded] = useState(false)
@@ -221,8 +220,6 @@ export function HeatmapView({ locations, stats, onMapLoad }: HeatmapViewProps) {
       {/* Statistics Dashboard */}
       {isMapLoaded && locations.length > 0 && (
         <StatsDashboard
-          locations={locations}
-          stats={stats}
           isVisible={statsVisible}
           onToggle={() => setStatsVisible(!statsVisible)}
         />
