@@ -11,12 +11,12 @@ function App() {
   const [locations, setLocations] = useState<ProcessedLocation[]>([])
   const [error, setError] = useState<string>('')
   const [isLoadingHash, setIsLoadingHash] = useState(
-    () => window.location.hash.startsWith('#v3,')
+    () => window.location.hash.startsWith('#v1,')
   )
 
   // Decode hash on initial load (for shared URLs)
   useEffect(() => {
-    if (!window.location.hash.startsWith('#v3,')) return
+    if (!window.location.hash.startsWith('#v1,')) return
 
     let cancelled = false
 

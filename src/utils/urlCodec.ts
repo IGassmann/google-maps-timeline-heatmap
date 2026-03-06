@@ -1,9 +1,9 @@
 import type { ProcessedLocation } from './timelineProcessor'
 
-const FORMAT_VERSION = 0x03
+const FORMAT_VERSION = 0x01
 const BYTES_PER_POINT = 6 // int16 lat delta + int16 lng delta + uint16 count
 const GRID_FACTOR = 5 // rounds to nearest 0.2 degree (~22 km)
-const HASH_PREFIX = 'v3,'
+const HASH_PREFIX = 'v1,'
 
 function toBase64Url(bytes: Uint8Array): string {
   const binString = Array.from(bytes, (byte) => String.fromCodePoint(byte)).join('')
