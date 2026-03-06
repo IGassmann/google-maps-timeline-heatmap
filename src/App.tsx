@@ -31,70 +31,51 @@ function App() {
     setError('')
   }
 
+  if (locations.length > 0) {
+    return (
+      <div className="h-screen w-screen relative">
+        <HeatmapView locations={locations} />
+
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-3 rounded-full bg-white/90 py-2 pl-4 pr-2 shadow-lg ring-1 ring-black/5 backdrop-blur-sm dark:bg-zinc-900/90 dark:ring-white/10">
+          <span className="text-sm font-medium text-gray-900 dark:text-white">Timeline Heatmap</span>
+          <button
+            onClick={handleReset}
+            className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+          >
+            New File
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="h-full bg-white dark:bg-zinc-900">
-      {locations.length === 0 ? (
-        <div className="h-full flex flex-col">
-          <header className="border-b border-zinc-950/10 dark:border-white/10">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-              <div className="text-center">
-                <h1 className="text-3xl font-semibold text-zinc-950 dark:text-white">
-                  Google Maps Timeline Heatmap
-                </h1>
-                <p className="mt-2 text-base/6 text-zinc-500 sm:text-sm/6 dark:text-zinc-400">
-                  Visualize your location history with an interactive heatmap
-                </p>
-              </div>
-            </div>
-          </header>
+    <div className="flex h-full flex-col items-center justify-center bg-white px-6 dark:bg-zinc-950">
+      <div className="w-full max-w-lg text-center">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+          Timeline Heatmap
+        </h1>
+        <p className="mt-2 text-sm text-gray-500 dark:text-zinc-400">
+          Visualize your Google Maps location history
+        </p>
 
-          <main className="flex-1 flex items-center justify-center p-8">
-            <div className="w-full max-w-4xl">
-              <FileUpload
-                onFileSelect={handleFileSelect}
-                onError={handleError}
-              />
-
-              {error && (
-                <div className="mt-6 max-w-2xl mx-auto">
-                  <div className="rounded-lg bg-red-500/10 p-4 ring-1 ring-red-600/20 dark:ring-red-500/30">
-                    <div className="flex">
-                      <div className="ml-3">
-                        <strong className="font-medium text-red-700 dark:text-red-400 text-sm">
-                          Error
-                        </strong>
-                        <p className="mt-1 text-red-600 dark:text-red-300 text-sm">
-                          {error}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-            </div>
-          </main>
+        <div className="mt-10">
+          <FileUpload
+            onFileSelect={handleFileSelect}
+            onError={handleError}
+          />
         </div>
-      ) : (
-        <div className="h-screen w-screen relative">
-          <HeatmapView locations={locations} />
 
-          {/* Floating header overlay */}
-          <div className="absolute top-4 right-4 rounded-xl bg-white p-4 text-sm shadow-lg ring-1 ring-zinc-950/10 z-20 max-w-sm dark:bg-zinc-900 dark:ring-white/10">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-zinc-950 dark:text-white">
-                Timeline Heatmap
-              </h2>
-              <button
-                onClick={handleReset}
-                className="ml-4 text-xs px-2 py-1 rounded-lg border border-zinc-950/10 text-zinc-950 hover:bg-zinc-950/2.5 dark:border-white/15 dark:text-white dark:hover:bg-white/5"
-              >
-                New File
-              </button>
-            </div>
+        {error && (
+          <div className="mt-6 rounded-lg bg-red-50 p-3 text-sm text-red-700 ring-1 ring-red-200 dark:bg-red-950/50 dark:text-red-400 dark:ring-red-900">
+            {error}
           </div>
-        </div>
-      )}
+        )}
+
+        <p className="mt-10 text-xs text-gray-400 dark:text-zinc-600">
+          All processing happens locally in your browser. Your data never leaves your device.
+        </p>
+      </div>
     </div>
   )
 }

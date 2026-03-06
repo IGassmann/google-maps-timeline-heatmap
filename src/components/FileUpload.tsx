@@ -52,15 +52,15 @@ export function FileUpload({ onFileSelect, onError }: FileUploadProps) {
   }, [processFile])
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-6">
+    <div className="w-full max-w-lg mx-auto">
       <div
         className={`
-          relative border-2 border-dashed rounded-xl p-12 text-center transition-colors cursor-pointer
+          group relative rounded-2xl border-2 border-dashed px-6 py-14 text-center transition-all cursor-pointer
           ${isDragOver
-            ? 'border-blue-400 bg-blue-500/5'
-            : 'border-zinc-950/10 dark:border-white/15 hover:border-zinc-950/20 dark:hover:border-white/25'
+            ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-950/30'
+            : 'border-gray-300 hover:border-gray-400 dark:border-zinc-700 dark:hover:border-zinc-500'
           }
-          ${isLoading ? 'opacity-75 pointer-events-none' : ''}
+          ${isLoading ? 'opacity-60 pointer-events-none' : ''}
         `}
         onDrop={handleDrop}
         onDragOver={(e) => {
@@ -71,49 +71,55 @@ export function FileUpload({ onFileSelect, onError }: FileUploadProps) {
         onClick={() => !isLoading && fileInputRef.current?.click()}
       >
         {isLoading ? (
-          <div className="flex flex-col items-center space-y-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            <p className="text-base/6 text-zinc-500 sm:text-sm/6 dark:text-zinc-400">Processing timeline data...</p>
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-indigo-600"></div>
+            <p className="text-sm text-gray-500 dark:text-zinc-400">Processing timeline data...</p>
           </div>
         ) : (
           <>
-            <div className="text-6xl mb-4">📁</div>
-            <h3 className="text-base/7 font-semibold text-zinc-950 sm:text-sm/6 dark:text-white mb-2">
-              Upload Google Maps Timeline
-            </h3>
-            <p className="text-base/6 text-zinc-500 sm:text-sm/6 dark:text-zinc-400 mb-4">
-              Drag and drop your timeline JSON file here, or click to browse
-            </p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Your data stays private - all processing happens in your browser
-            </p>
-            <div className="mt-6 pt-6 border-t border-zinc-950/5 dark:border-white/5 text-left">
-              <strong className="text-sm font-medium text-zinc-950 dark:text-white block mb-2">
-                How to get your Timeline data:
-              </strong>
-              <div className="space-y-3">
-                <div>
-                  <strong className="text-sm font-medium text-zinc-950 dark:text-white">Android</strong>
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">Settings → Location → Timeline → Export Timeline Data</p>
-                </div>
-                <div>
-                  <strong className="text-sm font-medium text-zinc-950 dark:text-white">iPhone</strong>
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">Google Maps → Profile icon → Your Timeline → ⋯ → Location and privacy settings → Export Timeline data</p>
-                </div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Transfer the exported JSON file to your computer via AirDrop, Google Drive, or USB.
-                </p>
-              </div>
+            <svg className="mx-auto h-10 w-10 text-gray-400 dark:text-zinc-500" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+            </svg>
+            <div className="mt-4">
+              <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">Upload a file</span>
+              <span className="text-sm text-gray-500 dark:text-zinc-400"> or drag and drop</span>
             </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              onChange={handleFileInput}
-              className="hidden"
-            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-zinc-500">
+              Timeline JSON export from Google Maps
+            </p>
           </>
         )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          onChange={handleFileInput}
+          className="hidden"
+        />
+      </div>
+
+      <div className="mt-8 text-left">
+        <details className="group">
+          <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-gray-900 dark:text-zinc-100 [&::-webkit-details-marker]:hidden">
+            <svg className="h-4 w-4 shrink-0 text-gray-400 transition-transform group-open:rotate-90 dark:text-zinc-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
+            How to export your Timeline data
+          </summary>
+          <div className="mt-3 ml-6 space-y-3 text-sm text-gray-500 dark:text-zinc-400">
+            <div>
+              <p className="font-medium text-gray-700 dark:text-zinc-300">Android</p>
+              <p>Settings &rarr; Location &rarr; Timeline &rarr; Export Timeline Data</p>
+            </div>
+            <div>
+              <p className="font-medium text-gray-700 dark:text-zinc-300">iPhone</p>
+              <p>Google Maps &rarr; Profile icon &rarr; Your Timeline &rarr; &#x22EF; &rarr; Location and privacy settings &rarr; Export Timeline data</p>
+            </div>
+            <p className="text-xs text-gray-400 dark:text-zinc-500">
+              Transfer the exported JSON file to your computer via AirDrop, Google Drive, or USB.
+            </p>
+          </div>
+        </details>
       </div>
     </div>
   )

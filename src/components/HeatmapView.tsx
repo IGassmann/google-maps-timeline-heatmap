@@ -121,19 +121,20 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
             9, 1,
             14, 1.8
           ],
+          // Gradient across Tailwind colors: cyan → sky → blue → indigo → violet → fuchsia → pink → rose
           'heatmap-color': [
             'interpolate',
             ['linear'],
             ['heatmap-density'],
             0, 'rgba(0,0,0,0)',
-            0.05, 'rgba(255,220,70,0.4)',
-            0.15, 'rgba(255,190,40,0.6)',
-            0.3, 'rgba(255,140,20,0.75)',
-            0.45, 'rgba(245,90,10,0.83)',
-            0.6, 'rgba(220,40,10,0.9)',
-            0.75, 'rgba(190,15,40,0.94)',
-            0.9, 'rgba(170,0,90,0.97)',
-            1, 'rgba(140,0,120,1)'
+            0.05, 'rgba(103,232,249,0.4)',   // cyan-300
+            0.15, 'rgba(56,189,248,0.6)',     // sky-400
+            0.3, 'rgba(59,130,246,0.75)',     // blue-500
+            0.45, 'rgba(99,102,241,0.83)',    // indigo-500
+            0.6, 'rgba(124,58,237,0.9)',      // violet-600
+            0.75, 'rgba(192,38,211,0.94)',    // fuchsia-600
+            0.9, 'rgba(219,39,119,0.97)',     // pink-600
+            1, 'rgba(159,18,57,1)'            // rose-800
           ],
           'heatmap-radius': [
             'interpolate',
@@ -174,9 +175,9 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
             'interpolate',
             ['linear'],
             ['get', 'count'],
-            1, '#f6ad35',
-            10, '#e53e3e',
-            50, '#8c0078'
+            1, '#67e8f9',   // cyan-300
+            10, '#6366f1',  // indigo-500
+            50, '#9f1239'   // rose-800
           ],
           'circle-stroke-color': 'white',
           'circle-stroke-width': 1,
@@ -207,10 +208,10 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
         style={{ minHeight: '500px' }}
       />
       {!isMapLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+        <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-zinc-950">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-            <p className="text-gray-600 dark:text-gray-400">Loading map...</p>
+            <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600"></div>
+            <p className="text-sm text-gray-500 dark:text-zinc-400">Loading map...</p>
           </div>
         </div>
       )}
