@@ -6,10 +6,8 @@ import { processTimelineData, type ProcessedLocation, type TimelineEntry } from 
 function App() {
   const [locations, setLocations] = useState<ProcessedLocation[]>([])
   const [error, setError] = useState<string>('')
-  const [isProcessing, setIsProcessing] = useState(false)
 
-  const handleFileSelect = async (data: TimelineEntry[]) => {
-    setIsProcessing(true)
+  const handleFileSelect = (data: TimelineEntry[]) => {
     setError('')
 
     try {
@@ -21,8 +19,6 @@ function App() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process timeline data')
-    } finally {
-      setIsProcessing(false)
     }
   }
 
@@ -76,14 +72,6 @@ function App() {
                 </div>
               )}
 
-              {isProcessing && (
-                <div className="mt-6 max-w-2xl mx-auto text-center">
-                  <span className="inline-flex items-center gap-x-1.5 rounded-md px-1.5 py-0.5 text-sm/5 font-medium bg-blue-500/15 text-blue-700 dark:text-blue-400">
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 dark:border-blue-400"></div>
-                    Processing timeline data...
-                  </span>
-                </div>
-              )}
             </div>
           </main>
         </div>
