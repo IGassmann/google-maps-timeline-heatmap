@@ -1,5 +1,6 @@
 import { useCallback, useState, useRef } from 'react'
 import type { TimelineEntry } from '../utils/timelineProcessor'
+import { Spinner } from './Spinner'
 
 interface FileUploadProps {
   onFileSelect: (data: TimelineEntry[]) => void
@@ -49,6 +50,7 @@ export function FileUpload({ onFileSelect, onError }: FileUploadProps) {
     if (files && files.length > 0) {
       processFile(files[0])
     }
+    e.target.value = ''
   }, [processFile])
 
   return (
@@ -71,10 +73,7 @@ export function FileUpload({ onFileSelect, onError }: FileUploadProps) {
         onClick={() => !isLoading && fileInputRef.current?.click()}
       >
         {isLoading ? (
-          <div className="flex flex-col items-center gap-3">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-indigo-600"></div>
-            <p className="text-sm text-gray-500 dark:text-zinc-400">Processing timeline data...</p>
-          </div>
+          <Spinner message="Processing timeline data..." />
         ) : (
           <>
             <svg className="mx-auto h-10 w-10 text-gray-400 dark:text-zinc-500" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">

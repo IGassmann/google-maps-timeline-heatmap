@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { ProcessedLocation } from '../utils/timelineProcessor'
+import { Spinner } from './Spinner'
 
 interface HeatmapViewProps {
   locations: ProcessedLocation[]
@@ -13,51 +14,49 @@ export function HeatmapView({ locations }: HeatmapViewProps) {
   const [isMapLoaded, setIsMapLoaded] = useState(false)
 
   useEffect(() => {
-    if (!mapContainer.current || map.current) return
+    if (!mapContainer.current) return
 
-    try {
-      map.current = new maplibregl.Map({
-        container: mapContainer.current,
-        style: {
-          version: 8,
-          sources: {
-            'carto': {
-              type: 'raster',
-              tiles: [
-                'https://a.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}@2x.png',
-                'https://b.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}@2x.png',
-                'https://c.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}@2x.png'
-              ],
-              tileSize: 256,
-              attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>'
-            }
-          },
-          layers: [
-            {
-              id: 'carto',
-              type: 'raster',
-              source: 'carto'
-            }
-          ]
+    const instance = new maplibregl.Map({
+      container: mapContainer.current,
+      style: {
+        version: 8,
+        sources: {
+          'carto': {
+            type: 'raster',
+            tiles: [
+              'https://a.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}@2x.png',
+              'https://b.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}@2x.png',
+              'https://c.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}@2x.png'
+            ],
+            tileSize: 256,
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>'
+          }
         },
-        center: [-98.5, 39.8],
-        zoom: 4
-      })
+        layers: [
+          {
+            id: 'carto',
+            type: 'raster',
+            source: 'carto'
+          }
+        ]
+      },
+      center: [0, 20],
+      zoom: 1
+    })
 
-      map.current.on('load', () => {
-        setIsMapLoaded(true)
-      })
+    map.current = instance
 
-      map.current.on('error', (e) => {
-        console.error('Map error:', e)
-      })
+    instance.on('load', () => {
+      setIsMapLoaded(true)
+    })
 
-      return () => {
-        map.current?.remove()
-        map.current = null
-      }
-    } catch (error) {
-      console.error('Failed to initialize map:', error)
+    instance.on('error', (e) => {
+      console.error('Map error:', e)
+    })
+
+    return () => {
+      map.current = null
+      instance.remove()
     }
   }, [])
 
@@ -203,10 +202,7 @@ export function HeatmapView({ locations }: HeatmapViewProps) {
       />
       {!isMapLoaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-zinc-950">
-          <div className="text-center">
-            <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600"></div>
-            <p className="text-sm text-gray-500 dark:text-zinc-400">Loading map...</p>
-          </div>
+          <Spinner message="Loading map..." />
         </div>
       )}
     </div>

@@ -17,7 +17,6 @@ export interface ProcessedLocation {
   latitude: number
   longitude: number
   count: number
-  totalDuration: number
   semanticType?: string
 }
 
@@ -34,16 +33,6 @@ function parseGeoLocation(geoString: string): { lat: number; lng: number } | nul
   return { lat, lng }
 }
 
-function calculateDuration(startTime: string, endTime: string): number {
-  try {
-    const start = new Date(startTime)
-    const end = new Date(endTime)
-    return Math.max(0, end.getTime() - start.getTime())
-  } catch {
-    return 0
-  }
-}
-
 export function processTimelineData(entries: TimelineEntry[]): ProcessedLocation[] {
   const locationMap = new Map<string, ProcessedLocation>()
 
@@ -54,19 +43,17 @@ export function processTimelineData(entries: TimelineEntry[]): ProcessedLocation
       const coords = parseGeoLocation(entry.visit.topCandidate.placeLocation)
       if (!coords) continue
 
-      const duration = calculateDuration(entry.startTime, entry.endTime)
       const key = entry.visit.topCandidate.placeID
+      if (!key) continue
 
       if (locationMap.has(key)) {
         const existing = locationMap.get(key)!
         existing.count++
-        existing.totalDuration += duration
       } else {
         locationMap.set(key, {
           latitude: coords.lat,
           longitude: coords.lng,
           count: 1,
-          totalDuration: duration,
           semanticType: entry.visit.topCandidate.semanticType
         })
       }
