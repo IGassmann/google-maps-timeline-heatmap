@@ -87,6 +87,24 @@ export function FileUpload({ onFileSelect, onError }: FileUploadProps) {
             <p className="text-sm text-gray-500 dark:text-gray-500">
               Your data stays private - all processing happens in your browser
             </p>
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 text-left text-sm text-gray-600 dark:text-gray-400">
+              <p className="font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                How to get your Timeline data:
+              </p>
+              <div className="space-y-3">
+                <div>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">Android</p>
+                  <p>Settings → Location → Timeline → Export Timeline Data</p>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-700 dark:text-gray-300">iPhone</p>
+                  <p>Google Maps → Profile icon → Your Timeline → ⋯ → Location and privacy settings → Export Timeline data</p>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-500">
+                  Transfer the exported JSON file to your computer via AirDrop, Google Drive, or USB.
+                </p>
+              </div>
+            </div>
             <input
               ref={fileInputRef}
               type="file"
