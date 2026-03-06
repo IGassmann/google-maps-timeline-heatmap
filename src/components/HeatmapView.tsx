@@ -25,22 +25,22 @@ export function HeatmapView({ locations, stats, onMapLoad }: HeatmapViewProps) {
         style: {
           version: 8,
           sources: {
-            'osm': {
+            'carto': {
               type: 'raster',
               tiles: [
-                'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
+                'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png',
+                'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png',
+                'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png'
               ],
               tileSize: 256,
-              attribution: '© OpenStreetMap contributors'
+              attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>'
             }
           },
           layers: [
             {
-              id: 'osm',
+              id: 'carto',
               type: 'raster',
-              source: 'osm'
+              source: 'carto'
             }
           ]
         },
@@ -98,53 +98,63 @@ export function HeatmapView({ locations, stats, onMapLoad }: HeatmapViewProps) {
         id: 'timeline-heatmap',
         type: 'heatmap',
         source: 'timeline-data',
-        maxzoom: 15,
+        maxzoom: 16,
         paint: {
+          // Log-scale weight: compresses extreme visit counts (1–1700+)
+          // so outliers don't drown out the rest of the map.
+          // ln(1)=0 → 0.1, ln(5)≈1.6 → 0.35, ln(20)≈3 → 0.6,
+          // ln(100)≈4.6 → 0.85, ln(500)≈6.2 → 1.1, ln(1800)≈7.5 → 1.3
           'heatmap-weight': [
             'interpolate',
             ['linear'],
-            ['get', 'count'],
-            1, 0.1,
-            5, 0.5,
-            20, 1,
-            100, 2
+            ['ln', ['max', ['get', 'count'], 1]],
+            0, 0.1,
+            1.6, 0.35,
+            3, 0.6,
+            4.6, 0.85,
+            6.2, 1.1,
+            7.5, 1.3
           ],
           'heatmap-intensity': [
             'interpolate',
             ['linear'],
             ['zoom'],
-            0, 0.8,
-            9, 1.2,
-            15, 2
+            0, 0.3,
+            5, 0.5,
+            9, 1,
+            14, 1.8
           ],
           'heatmap-color': [
             'interpolate',
             ['linear'],
             ['heatmap-density'],
             0, 'rgba(0,0,0,0)',
-            0.1, 'rgba(0,100,255,0.4)',
-            0.3, 'rgba(0,200,255,0.6)',
-            0.5, 'rgba(255,255,0,0.8)',
-            0.7, 'rgba(255,150,0,0.9)',
-            0.9, 'rgba(255,50,0,0.95)',
-            1, 'rgba(200,0,0,1)'
+            0.05, 'rgba(255,220,70,0.4)',
+            0.15, 'rgba(255,190,40,0.6)',
+            0.3, 'rgba(255,140,20,0.75)',
+            0.45, 'rgba(245,90,10,0.83)',
+            0.6, 'rgba(220,40,10,0.9)',
+            0.75, 'rgba(190,15,40,0.94)',
+            0.9, 'rgba(170,0,90,0.97)',
+            1, 'rgba(140,0,120,1)'
           ],
           'heatmap-radius': [
             'interpolate',
             ['linear'],
             ['zoom'],
-            0, 8,
-            5, 15,
-            10, 25,
-            15, 40
+            0, 4,
+            4, 8,
+            8, 18,
+            12, 35,
+            16, 50
           ],
           'heatmap-opacity': [
             'interpolate',
             ['linear'],
             ['zoom'],
             5, 0.9,
-            14, 0.6,
-            16, 0
+            14, 0.65,
+            17, 0
           ]
         }
       })
@@ -167,9 +177,9 @@ export function HeatmapView({ locations, stats, onMapLoad }: HeatmapViewProps) {
             'interpolate',
             ['linear'],
             ['get', 'count'],
-            1, '#3182ce',
+            1, '#f6ad35',
             10, '#e53e3e',
-            50, '#d53f8c'
+            50, '#8c0078'
           ],
           'circle-stroke-color': 'white',
           'circle-stroke-width': 1,
