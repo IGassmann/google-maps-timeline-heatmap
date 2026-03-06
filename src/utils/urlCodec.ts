@@ -70,8 +70,33 @@ function unpackLocations(data: Uint8Array): ProcessedLocation[] {
   return locations
 }
 
+// Round coordinates to a ~1.1 km grid and merge colliding points.
+// This keeps the heatmap recognizable while preventing shared URLs
+// from revealing exact addresses.
+function reduceResolution(locations: ProcessedLocation[]): ProcessedLocation[] {
+  const decimals = 2
+  const factor = 10 ** decimals
+  const map = new Map<string, ProcessedLocation>()
+
+  for (const loc of locations) {
+    const lat = Math.round(loc.latitude * factor) / factor
+    const lng = Math.round(loc.longitude * factor) / factor
+    const key = `${lat},${lng}`
+
+    const existing = map.get(key)
+    if (existing) {
+      existing.count += loc.count
+    } else {
+      map.set(key, { latitude: lat, longitude: lng, count: loc.count })
+    }
+  }
+
+  return Array.from(map.values())
+}
+
 export async function encodeLocations(locations: ProcessedLocation[]): Promise<string> {
-  const raw = packLocations(locations)
+  const reduced = reduceResolution(locations)
+  const raw = packLocations(reduced)
   const compressed = await compress(raw)
   return HASH_PREFIX + toBase64Url(compressed)
 }
