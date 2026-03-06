@@ -1,7 +1,5 @@
 import { useCallback, useState, useRef } from 'react'
 import type { TimelineEntry } from '../utils/timelineProcessor'
-import { Heading } from './ui/heading'
-import { Text, Strong } from './ui/text'
 
 interface FileUploadProps {
   onFileSelect: (data: TimelineEntry[]) => void
@@ -75,36 +73,36 @@ export function FileUpload({ onFileSelect, onError }: FileUploadProps) {
         {isLoading ? (
           <div className="flex flex-col items-center space-y-4">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            <Text>Processing timeline data...</Text>
+            <p className="text-base/6 text-zinc-500 sm:text-sm/6 dark:text-zinc-400">Processing timeline data...</p>
           </div>
         ) : (
           <>
             <div className="text-6xl mb-4">📁</div>
-            <Heading level={3} className="mb-2">
+            <h3 className="text-base/7 font-semibold text-zinc-950 sm:text-sm/6 dark:text-white mb-2">
               Upload Google Maps Timeline
-            </Heading>
-            <Text className="mb-4">
+            </h3>
+            <p className="text-base/6 text-zinc-500 sm:text-sm/6 dark:text-zinc-400 mb-4">
               Drag and drop your timeline JSON file here, or click to browse
-            </Text>
-            <Text className="!text-xs">
+            </p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
               Your data stays private - all processing happens in your browser
-            </Text>
+            </p>
             <div className="mt-6 pt-6 border-t border-zinc-950/5 dark:border-white/5 text-left">
-              <Strong className="text-sm block mb-2">
+              <strong className="text-sm font-medium text-zinc-950 dark:text-white block mb-2">
                 How to get your Timeline data:
-              </Strong>
+              </strong>
               <div className="space-y-3">
                 <div>
-                  <Strong className="text-sm">Android</Strong>
-                  <Text className="!text-sm">Settings → Location → Timeline → Export Timeline Data</Text>
+                  <strong className="text-sm font-medium text-zinc-950 dark:text-white">Android</strong>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">Settings → Location → Timeline → Export Timeline Data</p>
                 </div>
                 <div>
-                  <Strong className="text-sm">iPhone</Strong>
-                  <Text className="!text-sm">Google Maps → Profile icon → Your Timeline → ⋯ → Location and privacy settings → Export Timeline data</Text>
+                  <strong className="text-sm font-medium text-zinc-950 dark:text-white">iPhone</strong>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">Google Maps → Profile icon → Your Timeline → ⋯ → Location and privacy settings → Export Timeline data</p>
                 </div>
-                <Text className="!text-xs">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
                   Transfer the exported JSON file to your computer via AirDrop, Google Drive, or USB.
-                </Text>
+                </p>
               </div>
             </div>
             <input

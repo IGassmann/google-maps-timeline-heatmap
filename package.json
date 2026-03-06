@@ -6,13 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-"preview": "vite preview"
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@headlessui/react": "^2.2.9",
-    "clsx": "^2.1.1",
     "maplibre-gl": "5.7.0",
-    "motion": "^12.35.0",
     "react": "19.1.1",
     "react-dom": "19.1.1"
   },
@@ -21,7 +18,7 @@
     "@types/react": "19.1.12",
     "@types/react-dom": "19.1.9",
     "@vitejs/plugin-react": "5.0.2",
-"tailwindcss": "4.1.12",
+    "tailwindcss": "4.1.12",
     "typescript": "5.8.3",
     "vite": "7.1.3"
   },
