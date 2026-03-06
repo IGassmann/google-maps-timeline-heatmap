@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { ProcessedLocation } from '../utils/timelineProcessor'
-import { StatsDashboard } from './StatsDashboard'
 
 interface HeatmapViewProps {
   locations: ProcessedLocation[]
@@ -13,7 +12,6 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<maplibregl.Map | null>(null)
   const [isMapLoaded, setIsMapLoaded] = useState(false)
-  const [statsVisible, setStatsVisible] = useState(false)
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return
@@ -215,14 +213,6 @@ export function HeatmapView({ locations, onMapLoad }: HeatmapViewProps) {
             <p className="text-gray-600 dark:text-gray-400">Loading map...</p>
           </div>
         </div>
-      )}
-      
-      {/* Statistics Dashboard */}
-      {isMapLoaded && locations.length > 0 && (
-        <StatsDashboard
-          isVisible={statsVisible}
-          onToggle={() => setStatsVisible(!statsVisible)}
-        />
       )}
     </div>
   )
