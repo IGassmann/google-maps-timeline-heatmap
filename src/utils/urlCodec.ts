@@ -1,7 +1,7 @@
 import type { ProcessedLocation } from './timelineProcessor'
 
 const FORMAT_VERSION = 0x01
-const BYTES_PER_POINT = 6 // int16 lat delta + int16 lng delta + uint16 count
+const SHORTS_PER_GROUP = 4 // lat delta, lng delta, count, repetitions (each int16/uint16)
 const GRID_FACTOR = 5 // rounds to nearest 0.2 degree (~22 km)
 const HASH_PREFIX = 'v1,'
 
@@ -29,31 +29,56 @@ async function decompress(data: Uint8Array): Promise<Uint8Array> {
 }
 
 function packLocations(locations: ProcessedLocation[]): Uint8Array {
-  // Sort by lat then lng for optimal delta encoding
+  // Sort by lat, lng, then count for optimal delta + RLE encoding
   const sorted = [...locations].sort((a, b) => {
     const latA = Math.round(a.latitude * GRID_FACTOR)
     const latB = Math.round(b.latitude * GRID_FACTOR)
     if (latA !== latB) return latA - latB
-    return Math.round(a.longitude * GRID_FACTOR) - Math.round(b.longitude * GRID_FACTOR)
+    const lngA = Math.round(a.longitude * GRID_FACTOR)
+    const lngB = Math.round(b.longitude * GRID_FACTOR)
+    if (lngA !== lngB) return lngA - lngB
+    return a.count - b.count
   })
 
-  const buffer = new ArrayBuffer(1 + sorted.length * BYTES_PER_POINT)
+  // Group consecutive points with same (lat, lng, count) into runs
+  const groups: { lat: number; lng: number; count: number; reps: number }[] = []
+  for (const loc of sorted) {
+    const lat = Math.round(loc.latitude * GRID_FACTOR)
+    const lng = Math.round(loc.longitude * GRID_FACTOR)
+    const count = Math.min(loc.count, 65535)
+    const last = groups[groups.length - 1]
+    if (last && last.lat === lat && last.lng === lng && last.count === count && last.reps < 65535) {
+      last.reps++
+    } else {
+      groups.push({ lat, lng, count, reps: 1 })
+    }
+  }
+
+  // Column-oriented layout: all latΔ, then all lngΔ, then all counts, then all reps.
+  // Deflate compresses homogeneous runs of similar-magnitude values much better.
+  const n = groups.length
+  const buffer = new ArrayBuffer(1 + n * SHORTS_PER_GROUP * 2)
   const view = new DataView(buffer)
 
   view.setUint8(0, FORMAT_VERSION)
 
+  const colSize = n * 2 // bytes per column (n × int16)
+  const latOff = 1
+  const lngOff = 1 + colSize
+  const cntOff = 1 + colSize * 2
+  const repOff = 1 + colSize * 3
+
   let prevLat = 0
   let prevLng = 0
 
-  for (let i = 0; i < sorted.length; i++) {
-    const offset = 1 + i * BYTES_PER_POINT
-    const lat = Math.round(sorted[i].latitude * GRID_FACTOR)
-    const lng = Math.round(sorted[i].longitude * GRID_FACTOR)
-    view.setInt16(offset, lat - prevLat, true)
-    view.setInt16(offset + 2, lng - prevLng, true)
-    view.setUint16(offset + 4, Math.min(sorted[i].count, 65535), true)
-    prevLat = lat
-    prevLng = lng
+  for (let i = 0; i < n; i++) {
+    const g = groups[i]
+    view.setInt16(latOff + i * 2, g.lat - prevLat, true)
+    view.setInt16(lngOff + i * 2, g.lng - prevLng, true)
+    view.setUint16(cntOff + i * 2, g.count, true)
+    view.setUint16(repOff + i * 2, g.reps, true)
+    prevLat = g.lat
+    prevLng = g.lng
   }
 
   return new Uint8Array(buffer)
@@ -67,24 +92,32 @@ function unpackLocations(data: Uint8Array): ProcessedLocation[] {
 
   if (version !== FORMAT_VERSION) return []
 
-  const pointBytes = data.length - 1
-  if (pointBytes % BYTES_PER_POINT !== 0) return []
+  const bodyBytes = data.length - 1
+  const bytesPerGroup = SHORTS_PER_GROUP * 2
+  if (bodyBytes % bytesPerGroup !== 0) return []
 
-  const count = pointBytes / BYTES_PER_POINT
+  const n = bodyBytes / bytesPerGroup
   const locations: ProcessedLocation[] = []
+
+  const colSize = n * 2
+  const latOff = 1
+  const lngOff = 1 + colSize
+  const cntOff = 1 + colSize * 2
+  const repOff = 1 + colSize * 3
 
   let prevLat = 0
   let prevLng = 0
 
-  for (let i = 0; i < count; i++) {
-    const offset = 1 + i * BYTES_PER_POINT
-    prevLat += view.getInt16(offset, true)
-    prevLng += view.getInt16(offset + 2, true)
-    locations.push({
-      latitude: prevLat / GRID_FACTOR,
-      longitude: prevLng / GRID_FACTOR,
-      count: view.getUint16(offset + 4, true),
-    })
+  for (let i = 0; i < n; i++) {
+    prevLat += view.getInt16(latOff + i * 2, true)
+    prevLng += view.getInt16(lngOff + i * 2, true)
+    const count = view.getUint16(cntOff + i * 2, true)
+    const reps = view.getUint16(repOff + i * 2, true)
+    const latitude = prevLat / GRID_FACTOR
+    const longitude = prevLng / GRID_FACTOR
+    for (let r = 0; r < reps; r++) {
+      locations.push({ latitude, longitude, count })
+    }
   }
 
   return locations
