@@ -23,17 +23,7 @@ export interface ProcessedLocation {
   averageProbability: number
 }
 
-export interface ProcessingStats {
-  totalEntries: number
-  validLocations: number
-  invalidEntries: number
-  dateRange: {
-    start: Date | null
-    end: Date | null
-  }
-}
-
-export function parseGeoLocation(geoString: string): { lat: number; lng: number } | null {
+function parseGeoLocation(geoString: string): { lat: number; lng: number } | null {
   const match = geoString.match(/geo:(-?\d+\.?\d*),(-?\d+\.?\d*)/)
   if (!match) return null
 
@@ -46,7 +36,7 @@ export function parseGeoLocation(geoString: string): { lat: number; lng: number 
   return { lat, lng }
 }
 
-export function calculateDuration(startTime: string, endTime: string): number {
+function calculateDuration(startTime: string, endTime: string): number {
   try {
     const start = new Date(startTime)
     const end = new Date(endTime)
@@ -56,33 +46,15 @@ export function calculateDuration(startTime: string, endTime: string): number {
   }
 }
 
-export function processTimelineData(entries: TimelineEntry[]): {
-  locations: ProcessedLocation[]
-  stats: ProcessingStats
-} {
+export function processTimelineData(entries: TimelineEntry[]): ProcessedLocation[] {
   const locationMap = new Map<string, ProcessedLocation>()
-  const stats: ProcessingStats = {
-    totalEntries: entries.length,
-    validLocations: 0,
-    invalidEntries: 0,
-    dateRange: {
-      start: null,
-      end: null
-    }
-  }
 
   for (const entry of entries) {
     try {
-      if (!entry.visit?.topCandidate?.placeLocation) {
-        stats.invalidEntries++
-        continue
-      }
+      if (!entry.visit?.topCandidate?.placeLocation) continue
 
       const coords = parseGeoLocation(entry.visit.topCandidate.placeLocation)
-      if (!coords) {
-        stats.invalidEntries++
-        continue
-      }
+      if (!coords) continue
 
       const duration = calculateDuration(entry.startTime, entry.endTime)
       const probability = parseFloat(entry.visit.topCandidate.probability) || 0
@@ -106,27 +78,10 @@ export function processTimelineData(entries: TimelineEntry[]): {
           averageProbability: probability
         })
       }
-
-      const entryStart = new Date(entry.startTime)
-      const entryEnd = new Date(entry.endTime)
-
-      if (!stats.dateRange.start || entryStart < stats.dateRange.start) {
-        stats.dateRange.start = entryStart
-      }
-      if (!stats.dateRange.end || entryEnd > stats.dateRange.end) {
-        stats.dateRange.end = entryEnd
-      }
-
-      stats.validLocations++
     } catch {
-      stats.invalidEntries++
+      // skip invalid entries
     }
   }
 
-  const locations = Array.from(locationMap.values())
-
-  return {
-    locations,
-    stats
-  }
+  return Array.from(locationMap.values())
 }

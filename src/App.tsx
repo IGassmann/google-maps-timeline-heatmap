@@ -14,9 +14,9 @@ function App() {
 
     try {
       const result = processTimelineData(data)
-      setLocations(result.locations)
+      setLocations(result)
 
-      if (result.locations.length === 0) {
+      if (result.length === 0) {
         setError('No valid location data found in the timeline file')
       }
     } catch (err) {
