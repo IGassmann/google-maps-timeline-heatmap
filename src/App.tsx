@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { FileUpload } from './components/FileUpload'
 import { HeatmapView } from './components/HeatmapView'
-import { processTimelineData, type ProcessedLocation, type ProcessingStats, type TimelineEntry } from './utils/timelineProcessor'
+import { processTimelineData, type ProcessedLocation, type TimelineEntry } from './utils/timelineProcessor'
 
 function App() {
   const [locations, setLocations] = useState<ProcessedLocation[]>([])
-  const [stats, setStats] = useState<ProcessingStats | null>(null)
   const [error, setError] = useState<string>('')
   const [isProcessing, setIsProcessing] = useState(false)
 
@@ -16,7 +15,6 @@ function App() {
     try {
       const result = processTimelineData(data)
       setLocations(result.locations)
-      setStats(result.stats)
 
       if (result.locations.length === 0) {
         setError('No valid location data found in the timeline file')
@@ -34,7 +32,6 @@ function App() {
 
   const handleReset = () => {
     setLocations([])
-    setStats(null)
     setError('')
   }
 
@@ -96,7 +93,7 @@ function App() {
 
           {/* Floating header overlay */}
           <div className="absolute top-4 right-4 rounded-xl bg-white p-4 text-sm shadow-lg ring-1 ring-zinc-950/10 z-20 max-w-sm dark:bg-zinc-900 dark:ring-white/10">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-zinc-950 dark:text-white">
                 Timeline Heatmap
               </h2>
@@ -107,21 +104,6 @@ function App() {
                 New File
               </button>
             </div>
-            {stats && (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-x-1.5 rounded-md px-1.5 py-0.5 text-xs/5 font-medium bg-zinc-600/10 text-zinc-700 dark:bg-white/5 dark:text-zinc-400">
-                  {locations.length.toLocaleString()} locations
-                </span>
-                <span className="inline-flex items-center gap-x-1.5 rounded-md px-1.5 py-0.5 text-xs/5 font-medium bg-blue-500/15 text-blue-700 dark:text-blue-400">
-                  {stats.validLocations.toLocaleString()} visits
-                </span>
-                {stats.dateRange.start && stats.dateRange.end && (
-                  <span className="inline-flex items-center gap-x-1.5 rounded-md px-1.5 py-0.5 text-xs/5 font-medium bg-purple-500/15 text-purple-700 dark:text-purple-400">
-                    {stats.dateRange.start.getFullYear()} - {stats.dateRange.end.getFullYear()}
-                  </span>
-                )}
-              </div>
-            )}
           </div>
         </div>
       )}
