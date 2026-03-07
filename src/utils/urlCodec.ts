@@ -10,7 +10,66 @@ const SHORTS_PER_GROUP = 4 // lat delta, lng delta, count, repetitions (each int
 const GRID_FACTOR = 5 // rounds to nearest 0.2 degree (~22 km)
 const HASH_PREFIX = 'v1,'
 const COUNTRY_HASH_PREFIX = 'c1,'
-const COUNTRY_FORMAT_VERSION = 0x01
+const COUNTRY_FORMAT_VERSION = 0x02
+
+// All ISO 3166-1 alpha-2 codes in a fixed order.
+// Index into this array is the 1-byte country identifier used in the binary format.
+// prettier-ignore
+const COUNTRY_INDEX: readonly string[] = [
+  'AD','AE','AF','AG','AI','AL','AM','AO','AR','AT','AU','AW','AZ',
+  'BA','BB','BD','BE','BF','BG','BH','BI','BJ','BM','BN','BO','BR','BS','BT','BW','BY','BZ',
+  'CA','CD','CF','CG','CH','CI','CL','CM','CN','CO','CR','CU','CV','CY','CZ',
+  'DE','DJ','DK','DM','DO','DZ',
+  'EC','EE','EG','ER','ES','ET',
+  'FI','FJ','FM','FR',
+  'GA','GB','GD','GE','GH','GM','GN','GP','GQ','GR','GT','GW','GY',
+  'HN','HR','HT','HU',
+  'ID','IE','IL','IN','IQ','IR','IS','IT',
+  'JM','JO','JP',
+  'KE','KG','KH','KI','KM','KN','KP','KR','KW','KZ',
+  'LA','LB','LC','LI','LK','LR','LS','LT','LU','LV','LY',
+  'MA','MC','MD','ME','MG','MK','ML','MM','MN','MR','MT','MU','MV','MW','MX','MY','MZ',
+  'NA','NE','NG','NI','NL','NO','NP','NR','NZ',
+  'OM',
+  'PA','PE','PG','PH','PK','PL','PM','PR','PT','PW','PY',
+  'QA',
+  'RO','RS','RU','RW',
+  'SA','SB','SC','SD','SE','SG','SI','SK','SL','SM','SN','SO','SR','SS','ST','SV','SY','SZ',
+  'TD','TG','TH','TJ','TL','TM','TN','TO','TR','TT','TV','TW','TZ',
+  'UA','UG','US','UY','UZ',
+  'VA','VC','VE','VN','VU',
+  'WS',
+  'XK',
+  'YE',
+  'ZA','ZM','ZW',
+] as const
+
+const CODE_TO_INDEX = new Map(COUNTRY_INDEX.map((c, i) => [c, i]))
+
+const LOG_BUCKET_COUNT = 16
+
+// Quantize a raw count to a 0–15 log-scale bucket.
+// Bucket 0 = count 0, bucket 15 = highest observed count.
+function quantizeCounts(countries: CountryVisit[]): { code: string; bucket: number }[] {
+  if (countries.length === 0) return []
+  const maxCount = Math.max(...countries.map(c => c.count))
+  const logMax = Math.log(maxCount + 1)
+  return countries.map(c => ({
+    code: c.countryCode,
+    bucket: maxCount === 0 ? 0 : Math.round((Math.log(c.count + 1) / logMax) * (LOG_BUCKET_COUNT - 1)),
+  }))
+}
+
+// Reverse: expand a 0–15 bucket back to a representative count.
+// The exact original count is lost, but the relative ordering and
+// log-scale visual weight are preserved.
+function dequantizeBucket(bucket: number): number {
+  if (bucket === 0) return 0
+  // Map bucket back to a representative value using exponential scale.
+  // bucket 15 → 1000 (arbitrary ceiling that produces good ln() values for the choropleth)
+  const maxRepr = 1000
+  return Math.round(Math.exp((bucket / (LOG_BUCKET_COUNT - 1)) * Math.log(maxRepr + 1)) - 1)
+}
 
 function toBase64Url(bytes: Uint8Array): string {
   const binString = Array.from(bytes, (byte) => String.fromCodePoint(byte)).join('')
@@ -168,21 +227,40 @@ export async function decodeLocationsFromHash(hash: string): Promise<ProcessedLo
   }
 }
 
-// Binary layout: [version: uint8] [cc1: 2 ASCII bytes] [count1: uint16 LE] [cc2...] ...
+// Binary layout v2 — column-oriented, sorted + delta-encoded indices, nibble-packed buckets:
+// [version: uint8] [n: uint8] [index deltas: n bytes] [nibble-packed buckets: ceil(n/2) bytes]
+// Indices are sorted ascending and delta-encoded for better deflate compression.
+// Buckets (0-15) are packed two per byte (high nibble first).
 export async function encodeCountryData(countries: CountryVisit[]): Promise<string> {
-  const buffer = new ArrayBuffer(1 + countries.length * 4)
-  const view = new DataView(buffer)
-  view.setUint8(0, COUNTRY_FORMAT_VERSION)
+  const quantized = quantizeCounts(countries)
+  const entries = quantized
+    .filter(e => CODE_TO_INDEX.has(e.code))
+    .map(e => ({ idx: CODE_TO_INDEX.get(e.code)!, bucket: e.bucket }))
+    .sort((a, b) => a.idx - b.idx)
 
-  for (let i = 0; i < countries.length; i++) {
-    const offset = 1 + i * 4
-    const cc = countries[i].countryCode
-    view.setUint8(offset, cc.charCodeAt(0))
-    view.setUint8(offset + 1, cc.charCodeAt(1))
-    view.setUint16(offset + 2, Math.min(countries[i].count, 65535), true)
+  const n = entries.length
+  const bucketBytes = Math.ceil(n / 2)
+  const buffer = new Uint8Array(1 + 1 + n + bucketBytes)
+
+  buffer[0] = COUNTRY_FORMAT_VERSION
+  buffer[1] = n
+
+  // Column 1: delta-encoded indices
+  let prevIdx = 0
+  for (let i = 0; i < n; i++) {
+    buffer[2 + i] = entries[i].idx - prevIdx
+    prevIdx = entries[i].idx
   }
 
-  const compressed = await compress(new Uint8Array(buffer))
+  // Column 2: nibble-packed buckets (high nibble first)
+  const bucketOff = 2 + n
+  for (let i = 0; i < n; i += 2) {
+    const hi = entries[i].bucket & 0x0f
+    const lo = (i + 1 < n) ? (entries[i + 1].bucket & 0x0f) : 0
+    buffer[bucketOff + (i >> 1)] = (hi << 4) | lo
+  }
+
+  const compressed = await compress(buffer)
   return COUNTRY_HASH_PREFIX + toBase64Url(compressed)
 }
 
@@ -198,22 +276,24 @@ export async function decodeCountryDataFromHash(hash: string): Promise<CountryVi
     const compressed = fromBase64Url(encoded)
     const raw = await decompress(compressed)
 
-    if (raw.length < 1) return null
-    const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength)
+    if (raw.length < 2) return null
+    if (raw[0] !== COUNTRY_FORMAT_VERSION) return null
 
-    if (view.getUint8(0) !== COUNTRY_FORMAT_VERSION) return null
+    const n = raw[1]
+    const bucketBytes = Math.ceil(n / 2)
+    if (raw.length !== 1 + 1 + n + bucketBytes) return null
 
-    const bodyBytes = raw.length - 1
-    if (bodyBytes % 4 !== 0) return null
-
-    const n = bodyBytes / 4
+    const bucketOff = 2 + n
     const countries: CountryVisit[] = []
 
+    let prevIdx = 0
     for (let i = 0; i < n; i++) {
-      const offset = 1 + i * 4
-      const countryCode = String.fromCharCode(view.getUint8(offset), view.getUint8(offset + 1))
-      const count = view.getUint16(offset + 2, true)
-      countries.push({ countryCode, count })
+      prevIdx += raw[2 + i]
+      const nibbleByte = raw[bucketOff + (i >> 1)]
+      const bucket = (i % 2 === 0) ? (nibbleByte >> 4) : (nibbleByte & 0x0f)
+      if (prevIdx < COUNTRY_INDEX.length) {
+        countries.push({ countryCode: COUNTRY_INDEX[prevIdx], count: dequantizeBucket(bucket) })
+      }
     }
 
     return countries.length > 0 ? countries : null
