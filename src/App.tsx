@@ -1,4 +1,6 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import maplibregl from 'maplibre-gl'
+import 'maplibre-gl/dist/maplibre-gl.css'
 import { FileUpload } from './components/FileUpload'
 import { ShareButton } from './components/ShareButton'
 import { Spinner } from './components/Spinner'
@@ -6,10 +8,30 @@ import { processTimelineData, type ProcessedLocation, type TimelineEntry } from 
 import { encodeLocations, decodeLocationsFromHash, encodeCountryData, decodeCountryDataFromHash, type CountryVisit } from './utils/urlCodec'
 import { aggregateByCountry } from './utils/countryAggregator'
 
-const HeatmapView = lazy(() => import('./components/HeatmapView').then(m => ({ default: m.HeatmapView })))
-const ChoroplethView = lazy(() => import('./components/ChoroplethView').then(m => ({ default: m.ChoroplethView })))
-
 type ViewMode = 'heatmap' | 'choropleth'
+
+const MAP_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  sources: {
+    'carto': {
+      type: 'raster',
+      tiles: [
+        'https://a.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}@2x.png',
+        'https://b.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}@2x.png',
+        'https://c.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}@2x.png'
+      ],
+      tileSize: 256,
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>'
+    }
+  },
+  layers: [
+    {
+      id: 'carto',
+      type: 'raster',
+      source: 'carto'
+    }
+  ]
+}
 
 function App() {
   const [locations, setLocations] = useState<ProcessedLocation[]>([])
@@ -20,6 +42,11 @@ function App() {
   const [isLoadingHash, setIsLoadingHash] = useState(
     () => window.location.hash.startsWith('#v1,') || window.location.hash.startsWith('#c1,')
   )
+
+  const mapContainerRef = useRef<HTMLDivElement>(null)
+  const mapRef = useRef<maplibregl.Map | null>(null)
+  const [isMapLoaded, setIsMapLoaded] = useState(false)
+  const activeLayersRef = useRef<'heatmap' | 'choropleth' | null>(null)
 
   // Decode hash on initial load (for shared URLs)
   useEffect(() => {
@@ -53,6 +80,77 @@ function App() {
       return () => { cancelled = true }
     }
   }, [])
+
+  const hasData = locations.length > 0 || countryData.length > 0
+
+  // Map creation effect
+  useEffect(() => {
+    if (!hasData || !mapContainerRef.current) return
+
+    const instance = new maplibregl.Map({
+      container: mapContainerRef.current,
+      style: MAP_STYLE,
+      center: [0, 20],
+      zoom: 1
+    })
+
+    mapRef.current = instance
+
+    instance.on('load', () => {
+      setIsMapLoaded(true)
+    })
+
+    instance.on('error', (e) => {
+      console.error('Map error:', e)
+    })
+
+    return () => {
+      mapRef.current = null
+      activeLayersRef.current = null
+      setIsMapLoaded(false)
+      instance.remove()
+    }
+  }, [hasData])
+
+  // Layer management effect
+  useEffect(() => {
+    if (!mapRef.current || !isMapLoaded) return
+
+    let cancelled = false
+
+    async function swapLayers() {
+      const map = mapRef.current!
+
+      // Remove previous layers
+      if (activeLayersRef.current === 'heatmap') {
+        const { remove } = await import('./layers/heatmapLayers')
+        remove(map)
+      } else if (activeLayersRef.current === 'choropleth') {
+        const { remove } = await import('./layers/choroplethLayers')
+        remove(map)
+      }
+      activeLayersRef.current = null
+
+      if (cancelled) return
+
+      // Apply new layers
+      if (viewMode === 'choropleth' && countryData.length > 0) {
+        const { apply } = await import('./layers/choroplethLayers')
+        if (cancelled) return
+        await apply(map, countryData)
+        if (!cancelled) activeLayersRef.current = 'choropleth'
+      } else if (viewMode === 'heatmap' && locations.length > 0) {
+        const { apply } = await import('./layers/heatmapLayers')
+        if (cancelled) return
+        apply(map, locations)
+        if (!cancelled) activeLayersRef.current = 'heatmap'
+      }
+    }
+
+    swapLayers()
+
+    return () => { cancelled = true }
+  }, [viewMode, locations, countryData, isMapLoaded])
 
   const handleFileSelect = (data: TimelineEntry[]) => {
     setError('')
@@ -117,21 +215,18 @@ function App() {
     )
   }
 
-  const hasData = locations.length > 0 || countryData.length > 0
-
   if (hasData) {
     return (
       <div className="h-screen w-screen relative">
-        <Suspense fallback={
-          <div className="flex h-full w-full items-center justify-center bg-white dark:bg-zinc-950">
+        <div
+          ref={mapContainerRef}
+          className="w-full h-full min-h-[500px]"
+        />
+        {!isMapLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-zinc-950">
             <Spinner message="Loading map..." />
           </div>
-        }>
-          {viewMode === 'choropleth'
-            ? <ChoroplethView countryData={countryData} />
-            : <HeatmapView locations={locations} />
-          }
-        </Suspense>
+        )}
 
         <div className="absolute top-4 right-4 z-20 flex items-center gap-3 rounded-full bg-white/90 py-2 pl-2 pr-2 shadow-lg ring-1 ring-black/5 backdrop-blur-sm dark:bg-zinc-900/90 dark:ring-white/10">
           {!sharedCountryOnly && (
