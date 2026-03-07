@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@rapideditor/country-coder": "^5.6.1",
     "maplibre-gl": "5.7.0",
     "react": "19.1.1",
     "react-dom": "19.1.1"

@@ -3,35 +3,54 @@ import { FileUpload } from './components/FileUpload'
 import { ShareButton } from './components/ShareButton'
 import { Spinner } from './components/Spinner'
 import { processTimelineData, type ProcessedLocation, type TimelineEntry } from './utils/timelineProcessor'
-import { encodeLocations, decodeLocationsFromHash } from './utils/urlCodec'
+import { encodeLocations, decodeLocationsFromHash, encodeCountryData, decodeCountryDataFromHash, type CountryVisit } from './utils/urlCodec'
+import { aggregateByCountry } from './utils/countryAggregator'
 
 const HeatmapView = lazy(() => import('./components/HeatmapView').then(m => ({ default: m.HeatmapView })))
+const ChoroplethView = lazy(() => import('./components/ChoroplethView').then(m => ({ default: m.ChoroplethView })))
+
+type ViewMode = 'heatmap' | 'choropleth'
 
 function App() {
   const [locations, setLocations] = useState<ProcessedLocation[]>([])
+  const [countryData, setCountryData] = useState<CountryVisit[]>([])
+  const [viewMode, setViewMode] = useState<ViewMode>('heatmap')
+  const [sharedCountryOnly, setSharedCountryOnly] = useState(false)
   const [error, setError] = useState<string>('')
   const [isLoadingHash, setIsLoadingHash] = useState(
-    () => window.location.hash.startsWith('#v1,')
+    () => window.location.hash.startsWith('#v1,') || window.location.hash.startsWith('#c1,')
   )
 
   // Decode hash on initial load (for shared URLs)
   useEffect(() => {
-    if (!window.location.hash.startsWith('#v1,')) return
+    const hash = window.location.hash
 
-    let cancelled = false
+    if (hash.startsWith('#c1,')) {
+      let cancelled = false
+      decodeCountryDataFromHash(hash).then((decoded) => {
+        if (cancelled) return
+        if (decoded && decoded.length > 0) {
+          setCountryData(decoded)
+          setViewMode('choropleth')
+          setSharedCountryOnly(true)
+        }
+        setIsLoadingHash(false)
+        history.replaceState(null, '', window.location.pathname)
+      })
+      return () => { cancelled = true }
+    }
 
-    decodeLocationsFromHash(window.location.hash).then((decoded) => {
-      if (cancelled) return
-      if (decoded && decoded.length > 0) {
-        setLocations(decoded)
-      }
-      setIsLoadingHash(false)
-      // Clear hash so the user doesn't accidentally re-share the URL
-      history.replaceState(null, '', window.location.pathname)
-    })
-
-    return () => {
-      cancelled = true
+    if (hash.startsWith('#v1,')) {
+      let cancelled = false
+      decodeLocationsFromHash(hash).then((decoded) => {
+        if (cancelled) return
+        if (decoded && decoded.length > 0) {
+          setLocations(decoded)
+        }
+        setIsLoadingHash(false)
+        history.replaceState(null, '', window.location.pathname)
+      })
+      return () => { cancelled = true }
     }
   }, [])
 
@@ -41,6 +60,9 @@ function App() {
     try {
       const result = processTimelineData(data)
       setLocations(result)
+      setCountryData([])
+      setViewMode('heatmap')
+      setSharedCountryOnly(false)
 
       if (result.length === 0) {
         setError('No valid location data found in the timeline file')
@@ -54,30 +76,50 @@ function App() {
     setError(errorMessage)
   }
 
-  const handleShare = async () => {
-    const hash = await encodeLocations(locations)
-    const shareUrl = window.location.origin + window.location.pathname + '#' + hash
-    const decoded = await decodeLocationsFromHash(hash)
-    if (decoded && decoded.length > 0) {
-      setLocations(decoded)
+  const handleToggleView = async (mode: ViewMode) => {
+    if (mode === viewMode) return
+
+    if (mode === 'choropleth' && countryData.length === 0 && locations.length > 0) {
+      const aggregated = await aggregateByCountry(locations)
+      setCountryData(aggregated)
     }
-    return shareUrl
+
+    setViewMode(mode)
+  }
+
+  const handleShare = async () => {
+    let hash: string
+    if (viewMode === 'choropleth') {
+      hash = await encodeCountryData(countryData)
+    } else {
+      hash = await encodeLocations(locations)
+      const decoded = await decodeLocationsFromHash(hash)
+      if (decoded && decoded.length > 0) {
+        setLocations(decoded)
+      }
+    }
+    return window.location.origin + window.location.pathname + '#' + hash
   }
 
   const handleReset = () => {
     setLocations([])
+    setCountryData([])
+    setViewMode('heatmap')
+    setSharedCountryOnly(false)
     setError('')
   }
 
   if (isLoadingHash) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-white dark:bg-zinc-950">
-        <Spinner message="Loading shared heatmap..." />
+        <Spinner message="Loading shared map..." />
       </div>
     )
   }
 
-  if (locations.length > 0) {
+  const hasData = locations.length > 0 || countryData.length > 0
+
+  if (hasData) {
     return (
       <div className="h-screen w-screen relative">
         <Suspense fallback={
@@ -85,11 +127,40 @@ function App() {
             <Spinner message="Loading map..." />
           </div>
         }>
-          <HeatmapView locations={locations} />
+          {viewMode === 'choropleth'
+            ? <ChoroplethView countryData={countryData} />
+            : <HeatmapView locations={locations} />
+          }
         </Suspense>
 
         <div className="absolute top-4 right-4 z-20 flex items-center gap-3 rounded-full bg-white/90 py-2 pl-4 pr-2 shadow-lg ring-1 ring-black/5 backdrop-blur-sm dark:bg-zinc-900/90 dark:ring-white/10">
           <span className="text-sm font-medium text-gray-900 dark:text-white">Timeline Heatmap</span>
+
+          {!sharedCountryOnly && (
+            <div className="flex rounded-full bg-gray-100 p-0.5 dark:bg-zinc-800">
+              <button
+                onClick={() => handleToggleView('heatmap')}
+                className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors ${
+                  viewMode === 'heatmap'
+                    ? 'bg-white text-gray-900 shadow-sm dark:bg-zinc-700 dark:text-white'
+                    : 'text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-300'
+                }`}
+              >
+                Heatmap
+              </button>
+              <button
+                onClick={() => handleToggleView('choropleth')}
+                className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors ${
+                  viewMode === 'choropleth'
+                    ? 'bg-white text-gray-900 shadow-sm dark:bg-zinc-700 dark:text-white'
+                    : 'text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-300'
+                }`}
+              >
+                Countries
+              </button>
+            </div>
+          )}
+
           <ShareButton onShare={handleShare} />
           <button
             onClick={handleReset}

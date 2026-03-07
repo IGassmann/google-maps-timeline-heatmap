@@ -1,9 +1,16 @@
 import type { ProcessedLocation } from './timelineProcessor'
 
+export interface CountryVisit {
+  countryCode: string
+  count: number
+}
+
 const FORMAT_VERSION = 0x01
 const SHORTS_PER_GROUP = 4 // lat delta, lng delta, count, repetitions (each int16/uint16)
 const GRID_FACTOR = 5 // rounds to nearest 0.2 degree (~22 km)
 const HASH_PREFIX = 'v1,'
+const COUNTRY_HASH_PREFIX = 'c1,'
+const COUNTRY_FORMAT_VERSION = 0x01
 
 function toBase64Url(bytes: Uint8Array): string {
   const binString = Array.from(bytes, (byte) => String.fromCodePoint(byte)).join('')
@@ -156,6 +163,60 @@ export async function decodeLocationsFromHash(hash: string): Promise<ProcessedLo
     const locations = unpackLocations(raw)
 
     return locations.length > 0 ? locations : null
+  } catch {
+    return null
+  }
+}
+
+// Binary layout: [version: uint8] [cc1: 2 ASCII bytes] [count1: uint16 LE] [cc2...] ...
+export async function encodeCountryData(countries: CountryVisit[]): Promise<string> {
+  const buffer = new ArrayBuffer(1 + countries.length * 4)
+  const view = new DataView(buffer)
+  view.setUint8(0, COUNTRY_FORMAT_VERSION)
+
+  for (let i = 0; i < countries.length; i++) {
+    const offset = 1 + i * 4
+    const cc = countries[i].countryCode
+    view.setUint8(offset, cc.charCodeAt(0))
+    view.setUint8(offset + 1, cc.charCodeAt(1))
+    view.setUint16(offset + 2, Math.min(countries[i].count, 65535), true)
+  }
+
+  const compressed = await compress(new Uint8Array(buffer))
+  return COUNTRY_HASH_PREFIX + toBase64Url(compressed)
+}
+
+export async function decodeCountryDataFromHash(hash: string): Promise<CountryVisit[] | null> {
+  try {
+    const cleaned = hash.startsWith('#') ? hash.slice(1) : hash
+
+    if (!cleaned.startsWith(COUNTRY_HASH_PREFIX)) return null
+
+    const encoded = cleaned.slice(COUNTRY_HASH_PREFIX.length)
+    if (encoded.length === 0) return null
+
+    const compressed = fromBase64Url(encoded)
+    const raw = await decompress(compressed)
+
+    if (raw.length < 1) return null
+    const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength)
+
+    if (view.getUint8(0) !== COUNTRY_FORMAT_VERSION) return null
+
+    const bodyBytes = raw.length - 1
+    if (bodyBytes % 4 !== 0) return null
+
+    const n = bodyBytes / 4
+    const countries: CountryVisit[] = []
+
+    for (let i = 0; i < n; i++) {
+      const offset = 1 + i * 4
+      const countryCode = String.fromCharCode(view.getUint8(offset), view.getUint8(offset + 1))
+      const count = view.getUint16(offset + 2, true)
+      countries.push({ countryCode, count })
+    }
+
+    return countries.length > 0 ? countries : null
   } catch {
     return null
   }
