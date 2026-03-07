@@ -133,9 +133,7 @@ function App() {
           }
         </Suspense>
 
-        <div className="absolute top-4 right-4 z-20 flex items-center gap-3 rounded-full bg-white/90 py-2 pl-4 pr-2 shadow-lg ring-1 ring-black/5 backdrop-blur-sm dark:bg-zinc-900/90 dark:ring-white/10">
-          <span className="text-sm font-medium text-gray-900 dark:text-white">Timeline Heatmap</span>
-
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-3 rounded-full bg-white/90 py-2 pl-2 pr-2 shadow-lg ring-1 ring-black/5 backdrop-blur-sm dark:bg-zinc-900/90 dark:ring-white/10">
           {!sharedCountryOnly && (
             <div className="flex rounded-full bg-gray-100 p-0.5 dark:bg-zinc-800">
               <button
